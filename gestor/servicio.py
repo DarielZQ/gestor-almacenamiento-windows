@@ -19,8 +19,8 @@ import shutil
 import time
 from pathlib import Path
 
-from . import duplicados, respaldo
-from .config import cargar_reglas, config_para_motor, escribir_json, expandir
+from . import configuracion_inicial, duplicados, respaldo
+from .config import ErrorConfig, cargar_config, cargar_reglas, config_para_motor, escribir_json, expandir
 from .db import Db, ahora
 from .escaner import Candidato, Escaner
 from .motor import Motor
@@ -542,6 +542,33 @@ class Servicio:
         self.reglas = cargar_reglas(self.cfg["ruta_reglas"])
         r["aviso"] = "Reglas recargadas. Si cambió config.json, reinicia el gestor para aplicarlo."
         return r
+
+    # ==================================================================
+    # Configuración inicial del equipo (detección -> propuesta -> confirmación)
+    # ==================================================================
+    def detectar_equipo(self, progreso=None, fuentes=None) -> dict:
+        motor = self.motor if self.cfg.get("raiz_destino") else None
+        det = configuracion_inicial.detectar(fuentes, motor, progreso)
+        self.db.guardar_ajuste("ultima_deteccion", det)
+        return det
+
+    def equipo(self) -> dict:
+        return {"configurado": bool(self.cfg.get("raiz_destino")), "config": self.config_publica(),
+                "deteccion": self.db.ajuste("ultima_deteccion")}
+
+    def guardar_equipo(self, elecciones: dict) -> dict:
+        det = self.db.ajuste("ultima_deteccion")
+        if not det:
+            raise ErrorGestor("Primero detecta el equipo.")
+        try:
+            nueva = configuracion_inicial.construir_config(det, elecciones)
+            ruta = configuracion_inicial.guardar(nueva, self.cfg.get("ruta_config_equipo"))
+            extra = {k: self.cfg[k] for k in ("dir_datos", "ruta_reglas", "ruta_motor") if self.cfg.get(k)}
+            self.recargar(cargar_config(ruta, extra=extra))
+        except (ErrorConfig, OSError) as e:
+            raise ErrorGestor(str(e)) from e
+        self.respaldar_config("configuración del equipo guardada")
+        return {"guardado": str(ruta), **self.equipo()}
 
     def config_publica(self) -> dict:
         claves = ("raiz_destino", "dir_registro", "modo", "taxonomia", "permitir_junctions", "horas_recientes", "umbral_grande_mb", "vigilancia_minutos",

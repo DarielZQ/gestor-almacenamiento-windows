@@ -38,6 +38,7 @@
     <button role="tab" data-pestana="ejecutar">Ejecutar <span id="n-aprobados" class="contador"></span></button>
     <button role="tab" data-pestana="historial">Historial</button>
     <button role="tab" data-pestana="duplicados">Duplicados</button>
+    <button role="tab" data-pestana="equipo">Equipo</button>
     <button role="tab" data-pestana="ajustes">Ajustes</button>
   </nav>
 
@@ -150,6 +151,37 @@
         <span id="resumen-duplicados" class="tenue"></span>
       </div>
       <div id="lista-duplicados"></div>
+    </section>
+
+    <!-- Equipo: configuración inicial y "volver a detectar" -->
+    <section id="p-equipo" class="panel oculto">
+      <div id="equipo-sin-config" class="aviso oculto">
+        <strong>Primero, la configuración inicial.</strong> El gestor detecta tus discos, carpetas, nube, bibliotecas de juegos
+        y cachés (solo lectura) y te propone un destino. Nada se guarda hasta que confirmes.
+      </div>
+      <div class="fila-acciones">
+        <button id="btn-detectar" class="primario">Detectar equipo</button>
+        <span id="equipo-actual" class="tenue"></span>
+      </div>
+      <div id="equipo-deteccion" class="oculto">
+        <h2>Destino</h2>
+        <div id="equipo-advertencias"></div>
+        <div id="tabla-discos" class="tabla-contenedor"></div>
+        <div class="filtros">
+          <label class="crece">Otra carpeta de destino (opcional)
+            <input id="equipo-otra-ruta" type="search" placeholder="por ejemplo E:\Ejemplo\ o una carpeta en otro disco">
+          </label>
+          <label>Taxonomía de carpetas
+            <select id="equipo-taxonomia"><option value="es">Español</option><option value="en">English</option></select>
+          </label>
+          <label><span>Reubicar cachés con junction</span><input id="equipo-junctions" type="checkbox"></label>
+        </div>
+        <h2>Protegido automáticamente (intocable)</h2>
+        <div id="equipo-protegido"></div>
+        <h2>Cachés que se pueden reubicar</h2>
+        <div id="tabla-caches-equipo" class="tabla-contenedor"></div>
+        <div class="fila-acciones derecha"><button id="btn-guardar-equipo" class="primario">Guardar configuración</button></div>
+      </div>
     </section>
 
     <!-- Ajustes -->

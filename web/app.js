@@ -102,13 +102,14 @@ function mostrarTarea(t) {
   const activa = t && t.estado === "en_curso";
   caja.classList.toggle("oculto", !activa);
   if (activa) document.getElementById("tarea-texto").textContent = `${nombreTarea(t.tipo)}: ${t.progreso}`;
-  document.querySelectorAll("#btn-escanear, #btn-escanear-rapido, #btn-cola-rapido, #btn-simular, #btn-ejecutar, #btn-duplicados")
+  document.querySelectorAll("#btn-escanear, #btn-escanear-rapido, #btn-cola-rapido, #btn-simular, #btn-ejecutar, #btn-duplicados, #btn-detectar")
     .forEach(b => { b.disabled = activa; });
 }
 
 function nombreTarea(t) {
   return { escaneo: "Escaneando", vigilancia: "Buscando nuevos", ejecucion: "Ejecutando", simulacion: "Simulando",
-           deshacer: "Deshaciendo", duplicados: "Buscando duplicados" }[t] || t;
+           deshacer: "Deshaciendo", duplicados: "Buscando duplicados", deteccion: "Detectando el equipo",
+           vista_previa: "Calculando la vista previa" }[t] || t;
 }
 
 async function vigilarTarea() {
@@ -122,6 +123,7 @@ async function vigilarTarea() {
     if (t.estado === "error") avisar(`${nombreTarea(t.tipo)} falló: ${t.error}`, true);
     else avisar(resumenTarea(t));
     if ((t.tipo === "ejecucion" || t.tipo === "simulacion") && t.resultado) pintarResultadoEjecucion(t.resultado);
+    if (t.tipo === "deteccion" && t.estado !== "error") { cambiarPestana("equipo"); return; }
   }
   refrescar();
 }
@@ -133,6 +135,8 @@ function resumenTarea(t) {
   if (t.tipo === "ejecucion" || t.tipo === "simulacion")
     return `${r.modo === "SIMULACION" ? "Simulación" : "Ejecución"}: ${r.correctos} de ${r.total} correctos.`;
   if (t.tipo === "deshacer") return `Deshacer: ${r.estado}`;
+  if (t.tipo === "deteccion") return "Detección terminada: revisa la propuesta y guarda la configuración.";
+  if (t.tipo === "vista_previa") return `Vista previa: ${(r.cambios || []).length} archivos cambiarían de categoría.`;
   if (t.tipo === "duplicados") return `Duplicados: ${r.grupos} grupos (${tamano(r.bytes_repetidos)} repetidos).`;
   return "Tarea terminada.";
 }
@@ -149,7 +153,7 @@ async function refrescar() {
   try {
     await pintarContadores();
     const f = { resumen: pintarResumen, elementos: pintarElementos, cola: pintarCola, ejecutar: pintarEjecutar,
-                historial: pintarHistorial, duplicados: pintarDuplicados, ajustes: pintarAjustes }[estadoUI.pestana];
+                historial: pintarHistorial, duplicados: pintarDuplicados, equipo: pintarEquipo, ajustes: pintarAjustes }[estadoUI.pestana];
     if (f) await f();
   } catch (e) { avisar(e.message, true); }
 }
@@ -163,6 +167,8 @@ async function pintarContadores() {
   document.getElementById("n-aprobados").textContent = aprob || "";
   document.getElementById("min-vigilancia").textContent = e.vigilancia_minutos || "—";
   comprobarVersion(e.version);
+  // Sin configuración inicial, solo se puede ir a Equipo (y Ajustes): el resto necesita un destino.
+  if (e.configurado === false && !["equipo", "ajustes"].includes(estadoUI.pestana)) { cambiarPestana("equipo"); return; }
   mostrarTarea(e.tarea);
   if (e.tarea && e.tarea.estado === "en_curso") { clearTimeout(vigilarTarea._t); vigilarTarea._t = setTimeout(vigilarTarea, 1000); }
 }
@@ -364,6 +370,73 @@ async function pintarDuplicados() {
       el("ul", {}, g.rutas.map(x => el("li", { texto: x }))))));
 }
 
+// ---------------------------------------------------------------- Equipo (configuración inicial)
+async function pintarEquipo() {
+  const r = await api("/api/equipo");
+  document.getElementById("equipo-sin-config").classList.toggle("oculto", r.configurado);
+  document.getElementById("btn-detectar").textContent = r.configurado ? "Volver a detectar equipo" : "Detectar equipo";
+  const c = r.config;
+  document.getElementById("equipo-actual").textContent = r.configurado
+    ? `Destino actual: ${c.raiz_destino} · modo ${c.modo} · junctions ${c.permitir_junctions ? "sí" : "no"} · taxonomía ${c.taxonomia}`
+    : "Sin configurar.";
+  const det = r.deteccion;
+  document.getElementById("equipo-deteccion").classList.toggle("oculto", !det);
+  if (!det) return;
+  const p = det.propuesta, perfil = det.perfil;
+  document.getElementById("equipo-advertencias").replaceChildren(
+    ...p.advertencias.concat(perfil.avisos_carpetas || []).map(a => el("div", { clase: "aviso", texto: a })));
+  const elegido = estadoUI.destinoElegido || (r.configurado ? c.raiz_destino : p.raiz_destino);
+  document.getElementById("tabla-discos").replaceChildren(tabla([
+    { titulo: "", valor: d => { const x = el("input", { type: "radio", name: "destino", value: d.raiz, "aria-label": d.raiz });
+        x.checked = elegido.toLowerCase().startsWith(d.raiz.toLowerCase()); x.disabled = d.es_sistema && perfil.discos.length > 1;
+        x.addEventListener("change", () => { estadoUI.destinoElegido = d.raiz; }); return x; } },
+    { titulo: "Disco", valor: d => `${d.raiz}${d.etiqueta ? " (" + d.etiqueta + ")" : ""}` },
+    { titulo: "Tipo", valor: d => `${d.tipo}${d.es_sistema ? " · sistema" : ""}` },
+    { titulo: "Sistema de archivos", valor: d => d.sistema_archivos || "—" },
+    { titulo: "Libre", num: true, valor: d => tamano(d.libre) },
+    { titulo: "Total", num: true, valor: d => tamano(d.total) },
+  ], perfil.discos, "No se detectaron discos."));
+  document.getElementById("equipo-taxonomia").value = (r.configurado && c.taxonomia) || "es";
+  document.getElementById("equipo-junctions").checked = r.configurado ? !!c.permitir_junctions : !!p.permitir_junctions;
+  const lista = (titulo, filas) => el("div", {}, el("strong", { texto: titulo }),
+    filas.length ? el("ul", {}, filas.map(x => el("li", { texto: x }))) : el("p", { clase: "tenue", texto: "Ninguna." }));
+  const refs = det.referencias && !det.referencias.error ? Object.entries(det.referencias).map(([k, v]) => `${k}: ${v}`) : [];
+  document.getElementById("equipo-protegido").replaceChildren(
+    lista("Carpetas en la nube", perfil.nube.map(n => `${n.servicio}: ${n.ruta}`)),
+    lista("Bibliotecas de juegos y launchers", perfil.bibliotecas.map(b => `${b.plataforma}: ${b.ruta}`)),
+    lista("Rutas usadas por programas, accesos directos, PATH y servicios (el motor las revisa en cada análisis)", refs),
+    el("p", { clase: "tenue", texto: "Además: Windows, Program Files, ProgramData, repositorios git y bases de datos son siempre intocables o se marcan para revisar." }));
+  const propuestas = Object.fromEntries(p.caches.map(x => [x.nombre, x.habilitada]));
+  const actuales = r.configurado && Array.isArray(c.caches) ? Object.fromEntries(c.caches.map(x => [x.nombre, x.habilitada])) : null;
+  document.getElementById("tabla-caches-equipo").replaceChildren(tabla([
+    { titulo: "", valor: x => { const k = el("input", { type: "checkbox", "data-cache": x.nombre, "aria-label": x.nombre });
+        k.checked = actuales ? !!actuales[x.nombre] : !!propuestas[x.nombre]; k.disabled = !x.segura || x.ya_enlazada; return k; } },
+    { titulo: "Caché", valor: x => el("td", { clase: "nombre" }, x.app || x.nombre, el("span", { clase: "ruta-sub", texto: x.ruta_real || x.ruta })) },
+    { titulo: "Tamaño", num: true, valor: x => tamano(x.bytes) },
+    { titulo: "Reubicable", valor: x => x.ya_enlazada ? "ya enlazada" : (x.segura ? "sí" : "no recomendada") },
+    { titulo: "Nota", valor: x => x.nota || "" },
+  ], perfil.caches, "No se encontraron cachés del catálogo."));
+}
+
+async function guardarEquipo() {
+  const otra = document.getElementById("equipo-otra-ruta").value.trim();
+  const marcado = document.querySelector('input[name="destino"]:checked');
+  const elecciones = {
+    raiz_destino: otra || (marcado ? marcado.value : undefined),
+    taxonomia: document.getElementById("equipo-taxonomia").value,
+    permitir_junctions: document.getElementById("equipo-junctions").checked,
+    caches_habilitadas: [...document.querySelectorAll("input[data-cache]")].filter(x => x.checked).map(x => x.dataset.cache),
+  };
+  if (!(await confirmar("Guardar la configuración del equipo",
+    `Destino: ${elecciones.raiz_destino || "el propuesto"}. Se guardará config\\config.json (con respaldo de la versión anterior). No se mueve nada.`, "Guardar"))) return;
+  try {
+    await api("/api/equipo/guardar", { elecciones });
+    estadoUI.destinoElegido = null;
+    avisar("Configuración guardada. Ya puedes escanear.");
+    refrescar();
+  } catch (e) { avisar(e.message, true); }
+}
+
 // ---------------------------------------------------------------- Ajustes
 async function pintarAjustes() {
   document.getElementById("config").textContent = JSON.stringify(await api("/api/config"), null, 2);
@@ -420,6 +493,8 @@ document.addEventListener("DOMContentLoaded", () => {
     try { await api("/api/reiniciar", {}); avisar("Reiniciando el gestor…"); }
     catch (e) { avisar(e.message, true); }
   });
+  document.getElementById("btn-detectar").addEventListener("click", () => lanzarTarea("/api/equipo/detectar", {}));
+  document.getElementById("btn-guardar-equipo").addEventListener("click", guardarEquipo);
   document.getElementById("btn-respaldar").addEventListener("click", async () => {
     try { const r = await api("/api/respaldos/crear", {}); avisar(r.respaldo ? "Respaldo creado." : "No hay configuración personal que respaldar."); pintarAjustes(); }
     catch (e) { avisar(e.message, true); }

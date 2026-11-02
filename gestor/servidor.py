@@ -162,6 +162,7 @@ def crear_manejador(app: Aplicacion):
         "/api/duplicados": lambda q: s.listar_duplicados(),
         "/api/config": lambda q: s.config_publica(),
         "/api/tarea": lambda q: {"tarea": app.tareas.actual},
+        "/api/equipo": lambda q: s.equipo(),
         "/api/respaldos": lambda q: {"respaldos": s.respaldos(), "carpeta": str(respaldo.dir_respaldos(s.cfg) or "")},
     }
     POST = {
@@ -174,6 +175,8 @@ def crear_manejador(app: Aplicacion):
         "/api/historial/importar": lambda d: {"importadas": s.importar_historial()},
         "/api/duplicados/buscar": lambda d: lanzar("duplicados", lambda p: s.buscar_duplicados(p)),
         "/api/detener": lambda d: app.solicitar_parada(),
+        "/api/equipo/detectar": lambda d: lanzar("deteccion", lambda p: s.detectar_equipo(p)),
+        "/api/equipo/guardar": lambda d: s.guardar_equipo(d.get("elecciones") or {}),
         "/api/reiniciar": lambda d: app.solicitar_reinicio(),
         "/api/respaldos/crear": lambda d: {"respaldo": s.respaldar_config("manual", forzar=True)},
         "/api/respaldos/restaurar": lambda d: s.restaurar_respaldo(str(d.get("nombre") or "")),

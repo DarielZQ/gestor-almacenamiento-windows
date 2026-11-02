@@ -48,7 +48,10 @@ Versión 0.1.0 — 2026-11-01. Primera versión funcional y probada.
 ## Pendiente (por prioridad)
 1. **Etapa 2: portabilidad a cualquier Windows 10/11.** Hecho: comprobación de versión; configuración por capas con
    esquema; motor con `-Config` y sin destino fijo; protección por detección (servicios, marcadores de bibliotecas,
-   `intocables_detectados`); catálogo genérico de cachés. Falta el resto del diseño:
+   `intocables_detectados`); catálogo genérico de cachés; configuración inicial en la interfaz (pestaña Equipo,
+   también "volver a detectar") y por consola (`python -m gestor.configuracion_inicial`), hoy sobre una detección
+   provisional (`gestor\deteccion_provisional.py`) que se sustituirá por el módulo `gestor\deteccion` definitivo.
+   Falta el resto del diseño:
    - Configuración por capas: `config.example.json` sin destino fijo (`raiz_destino: null`) → `config.json` del equipo
      (generado por la configuración inicial, validado con esquema y mensajes claros) → `reglas.local.json`.
    - Motor con `-Config <ruta>`: destino, `dir_registro`, `intocables_detectados` (nube, bibliotecas de juegos,
