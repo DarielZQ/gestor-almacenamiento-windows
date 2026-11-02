@@ -51,7 +51,8 @@ Versión 0.1.0 — 2026-11-01. Primera versión funcional y probada.
    `intocables_detectados`); catálogo genérico de cachés; configuración inicial en la interfaz (pestaña Equipo,
    también "volver a detectar") y por consola (`python -m gestor.configuracion_inicial`), hoy sobre una detección
    provisional (`gestor\deteccion_provisional.py`) que se sustituirá por el módulo `gestor\deteccion` definitivo.
-   Falta el resto del diseño:
+   Hechos también: instalador (`instalar.ps1`/`.bat`), taxonomía editable con vista previa y en inglés,
+   perfiles exportables y `docs\ADAPTAR-A-TU-EQUIPO.md`. Diseño original de la etapa:
    - Configuración por capas: `config.example.json` sin destino fijo (`raiz_destino: null`) → `config.json` del equipo
      (generado por la configuración inicial, validado con esquema y mensajes claros) → `reglas.local.json`.
    - Motor con `-Config <ruta>`: destino, `dir_registro`, `intocables_detectados` (nube, bibliotecas de juegos,

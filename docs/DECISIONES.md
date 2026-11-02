@@ -90,3 +90,17 @@
   referencias, igual que los programas instalados, los accesos directos y el PATH.
 - El catálogo `config\catalogo_caches.json` marca qué cachés son seguras de reubicar; la lista efectiva del equipo
   vive en `config.json` (`caches`, con `habilitada`). Si el destino es USB o no NTFS, las junctions se desactivan.
+
+## 2026-11-02 — Configuración inicial, taxonomía editable y perfiles
+- La configuración inicial solo detecta y propone; nada se guarda sin confirmación. Destino propuesto: el disco que
+  no es del sistema con más espacio libre. Destino USB: junctions desactivadas por defecto (fallan si se desconecta).
+  No NTFS: junctions desactivadas. Un solo disco: modo `solo_analisis` (mover en el mismo disco no libera espacio).
+- La detección vive en un módulo con fuentes inyectables (variables de entorno, volúmenes, registro) para poder
+  simular cualquier equipo en las pruebas.
+- La taxonomía se edita en la capa personal (`reglas.local.json`); quitar una categoría se expresa como `null`; las
+  reglas propias (`archivos.reglas_usuario`) van antes que las genéricas. La vista previa reclasifica con el motor y
+  unas reglas temporales, así la lógica no se duplica en Python.
+- La taxonomía en inglés es una capa (`config\taxonomias\en.json`) que solo cambia los nombres de carpetas.
+- Los perfiles exportados no llevan datos personales ni del equipo salvo que se marque; importar respalda antes.
+- `instalar.ps1` no instala Python: si falta, explica cómo hacerlo. Es idempotente.
+- Alcance: solo Windows (PowerShell, NTFS y junctions).
