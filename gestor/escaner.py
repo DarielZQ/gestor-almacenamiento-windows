@@ -139,7 +139,12 @@ class Escaner:
 
     def _zona_caches(self) -> list[Candidato]:
         res = []
-        for c in self.reglas.get("caches", {}).get("lista", []):
+        lista = self.cfg.get("caches")
+        if lista is None:
+            lista = self.reglas.get("caches", {}).get("lista", [])
+        for c in lista:
+            if not c.get("habilitada", True):
+                continue
             ruta = expandir(c["ruta"])
             if not ruta or not os.path.lexists(ruta):
                 continue

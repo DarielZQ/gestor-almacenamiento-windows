@@ -79,3 +79,14 @@
   finales de línea normalizados. El servidor guarda la de su arranque y la compara con la del disco en cada `/salud`.
 - La página lleva la huella con la que se sirvió; si difiere de la del servidor, pide recargar.
 - El reinicio desde la interfaz lanza un proceso nuevo desacoplado en el mismo puerto después de cerrar el actual.
+
+## 2026-11-02 — Configuración por capas y motor sin destino fijo
+- `config.example.json` ya no trae destino: sin `config.json` el gestor no escanea ni ejecuta y pide la configuración
+  inicial. `config.json` se valida con un esquema propio (sin dependencias) y mensajes claros.
+- El motor recibe la configuración del equipo con `-Config` (el gestor genera `datos\tmp\config_motor.json`); sin
+  `-RaizDestino` ni configuración, falla con un mensaje claro. `-RaizDestino` sigue funcionando.
+- Las bibliotecas de juegos se reconocen por su contenido (`steamapps`, `libraryfolder.vdf`, `.egstore`...) y por las
+  rutas que detecte la configuración inicial, no por nombres de launchers. Los servicios de Windows cuentan como
+  referencias, igual que los programas instalados, los accesos directos y el PATH.
+- El catálogo `config\catalogo_caches.json` marca qué cachés son seguras de reubicar; la lista efectiva del equipo
+  vive en `config.json` (`caches`, con `habilitada`). Si el destino es USB o no NTFS, las junctions se desactivan.

@@ -14,7 +14,7 @@ import urllib.request
 import webbrowser
 from pathlib import Path
 
-from .config import cargar_config, cargar_reglas
+from .config import ErrorConfig, cargar_config, cargar_reglas
 from .db import ahora
 from .servicio import Servicio
 from .servidor import APP_ID, crear_servidor
@@ -46,7 +46,11 @@ def main(argv=None) -> int:
     ap.add_argument("--config", default=None, help="ruta a un config.json alternativo")
     args = ap.parse_args(argv)
 
-    cfg = cargar_config(args.config)
+    try:
+        cfg = cargar_config(args.config)
+    except ErrorConfig as e:
+        print(f"Configuración no válida: {e}")
+        return 2
     Path(cfg["dir_datos"]).mkdir(parents=True, exist_ok=True)
     if sys.stdout is None or sys.stderr is None:
         # Arrancado con pythonw.exe (sin consola): la salida va a datos/servidor.log.
@@ -64,7 +68,7 @@ def main(argv=None) -> int:
             webbrowser.open(url)
         return 0
 
-    reglas = cargar_reglas(cfg["ruta_reglas"])
+    reglas = cargar_reglas(cfg["ruta_reglas"], cfg.get("taxonomia"))
     servicio = Servicio(cfg, reglas)
     try:
         servicio.respaldar_config("al arrancar")

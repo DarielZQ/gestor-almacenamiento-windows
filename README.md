@@ -146,6 +146,8 @@ de commit o las identidades:
 - los **términos privados definidos localmente** en `config\privacidad.local.txt` (no versionado). Copia
   `config\privacidad.local.example.txt`: un término por línea, o `re:<expresión>` para expresiones regulares.
   Si el archivo no existe, el script avisa y aplica solo los patrones genéricos.
+- En documentación y pruebas, las rutas de ejemplo en otras unidades usan carpetas de la taxonomía o nombres que
+  empiezan por `Ejemplo` (por ejemplo `E:\Ejemplo_Juegos`).
 
 Los hooks `.githooks\pre-commit` (sobre lo preparado) y `.githooks\commit-msg` (sobre el mensaje) usan la misma
 lista local cuando existe. Las protecciones de carpetas de apps concretas de un equipo van en

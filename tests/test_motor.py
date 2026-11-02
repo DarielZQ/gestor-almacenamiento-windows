@@ -68,8 +68,8 @@ def test_analizar_carpetas_intocables_y_clasificadas(equipo, motor):
     escribir(codigo / "package.json", "{}")
     raiz_ingles = equipo.destino / "Curso de ingles"
     escribir(raiz_ingles / "a.pdf")
-    steam = equipo.destino / "SteamLibrary"
-    escribir(steam / "x.bin")
+    steam = equipo.destino / "BibliotecaJuegos"          # biblioteca detectada por contenido, no por nombre
+    escribir(steam / "steamapps" / "appmanifest_1.acf")
     portable = equipo.destino / "HerramientaPortable"
     escribir(portable / "herramienta.exe")
     propia = equipo.destino / "Multimedia"
@@ -95,7 +95,7 @@ def test_analizar_carpetas_intocables_y_clasificadas(equipo, motor):
     assert r[5]["codigo"] == "OK" and r[5]["categoria"] == "Triage_Por_Clasificar\\Carpetas_De_Mensajeria"
     assert r[6]["codigo"] == "OK" and r[6]["categoria"] == "Proyectos_Codigo\\Desde_Descargas"
     assert r[7]["codigo"] == "OK" and r[7]["categoria"] == "Universidad_Academico\\Ingles_Idiomas"
-    assert r[8]["codigo"] == "CONSERVAR"
+    assert r[8]["codigo"] == "INTOCABLE" and "biblioteca" in r[8]["motivo"]
     assert r[9]["codigo"] == "CONSERVAR" and "ejecutable" in r[9]["motivo"]
     assert r[10]["codigo"] == "PROPIA"
     assert r[11]["codigo"] == "NO_EXISTE"

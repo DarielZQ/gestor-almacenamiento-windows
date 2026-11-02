@@ -1,0 +1,31 @@
+{
+  "_comentario": "Catálogo genérico de cachés de apps comunes. La configuración inicial mide las que existen en el equipo y propone habilitar las 'segura': regenerables y que admiten moverse a otro disco dejando una junction (con la app cerrada). 'nombre' es la carpeta de destino dentro de Cache_Aplicaciones_Enlazadas.",
+  "cachés": [
+    { "nombre": "npm_cache", "app": "npm (Node.js)", "ruta": "%LOCALAPPDATA%\\npm-cache", "segura": true, "procesos": ["node"] },
+    { "nombre": "pip_cache", "app": "pip (Python)", "ruta": "%LOCALAPPDATA%\\pip\\cache", "segura": true, "procesos": [] },
+    { "nombre": "yarn_cache", "app": "Yarn", "ruta": "%LOCALAPPDATA%\\Yarn\\Cache", "segura": true, "procesos": ["node"] },
+    { "nombre": "NuGet_v3_cache", "app": "NuGet", "ruta": "%LOCALAPPDATA%\\NuGet\\v3-cache", "segura": true, "procesos": ["devenv", "dotnet"] },
+    { "nombre": "NuGet_packages", "app": "NuGet", "ruta": "%USERPROFILE%\\.nuget\\packages", "segura": true, "procesos": ["devenv", "dotnet"] },
+    { "nombre": "Gradle_caches", "app": "Gradle", "ruta": "%USERPROFILE%\\.gradle\\caches", "segura": true, "procesos": ["java", "studio64"] },
+    { "nombre": "Maven_repository", "app": "Maven", "ruta": "%USERPROFILE%\\.m2\\repository", "segura": true, "procesos": ["java"] },
+    { "nombre": "NVIDIA_DXCache", "app": "NVIDIA (sombreadores DirectX)", "ruta": "%LOCALAPPDATA%\\NVIDIA\\DXCache", "segura": true, "procesos": [] },
+    { "nombre": "NVIDIA_GLCache", "app": "NVIDIA (sombreadores OpenGL)", "ruta": "%LOCALAPPDATA%\\NVIDIA\\GLCache", "segura": true, "procesos": [] },
+    { "nombre": "AMD_DxCache", "app": "AMD (sombreadores DirectX)", "ruta": "%LOCALAPPDATA%\\AMD\\DxCache", "segura": true, "procesos": [] },
+    { "nombre": "AMD_DxcCache", "app": "AMD (sombreadores DXC)", "ruta": "%LOCALAPPDATA%\\AMD\\DxcCache", "segura": true, "procesos": [] },
+    { "nombre": "NetBeans_Cache", "app": "NetBeans", "ruta": "%LOCALAPPDATA%\\NetBeans\\Cache", "segura": true, "procesos": ["netbeans64", "netbeans"] },
+    { "nombre": "JetBrains_caches", "app": "IDEs de JetBrains", "ruta": "%LOCALAPPDATA%\\JetBrains", "segura": true, "procesos": ["idea64", "pycharm64", "webstorm64", "rider64", "clion64", "goland64", "phpstorm64", "datagrip64"] },
+    { "nombre": "VSCode_CachedData", "app": "Visual Studio Code", "ruta": "%APPDATA%\\Code\\CachedData", "segura": true, "procesos": ["Code"] },
+    { "nombre": "VSCode_Cache", "app": "Visual Studio Code", "ruta": "%APPDATA%\\Code\\Cache", "segura": true, "procesos": ["Code"] },
+    { "nombre": "Unity_cache", "app": "Unity", "ruta": "%LOCALAPPDATA%\\Unity\\cache", "segura": true, "procesos": ["Unity", "Unity Hub"] },
+    { "nombre": "Spotify_Storage", "app": "Spotify", "ruta": "%LOCALAPPDATA%\\Spotify\\Storage", "segura": true, "procesos": ["Spotify"] },
+    { "nombre": "Discord_Cache", "app": "Discord", "ruta": "%APPDATA%\\discord\\Cache", "segura": true, "procesos": ["Discord"] },
+    { "nombre": "Chrome_User_Data", "app": "Google Chrome", "ruta": "%LOCALAPPDATA%\\Google\\Chrome\\User Data", "segura": false, "procesos": ["chrome"], "nota": "Perfil del navegador: usa la limpieza del propio navegador." },
+    { "nombre": "Edge_User_Data", "app": "Microsoft Edge", "ruta": "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data", "segura": false, "procesos": ["msedge"], "nota": "Perfil del navegador: usa la limpieza del propio navegador." },
+    { "nombre": "Brave_User_Data", "app": "Brave", "ruta": "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data", "segura": false, "procesos": ["brave"], "nota": "Perfil del navegador." },
+    { "nombre": "Firefox_Profiles", "app": "Firefox", "ruta": "%APPDATA%\\Mozilla\\Firefox\\Profiles", "segura": false, "procesos": ["firefox"], "nota": "Perfil del navegador." },
+    { "nombre": "Teams_clasico", "app": "Microsoft Teams (clásico)", "ruta": "%APPDATA%\\Microsoft\\Teams", "segura": false, "procesos": ["Teams"], "nota": "El Teams nuevo vive en Packages (MSIX) y no admite junctions." },
+    { "nombre": "Docker", "app": "Docker Desktop", "ruta": "%LOCALAPPDATA%\\Docker", "segura": false, "procesos": ["Docker Desktop"], "nota": "Usa la opción de ubicación de discos de Docker." },
+    { "nombre": "uv_cache", "app": "uv (Python)", "ruta": "%LOCALAPPDATA%\\uv", "segura": false, "procesos": [], "nota": "Usa enlaces duros hacia los entornos: no se reubica." },
+    { "nombre": "Temp", "app": "Windows y apps", "ruta": "%LOCALAPPDATA%\\Temp", "segura": false, "procesos": [], "nota": "Temporales: límpialos desde Configuración > Sistema > Almacenamiento." }
+  ]
+}

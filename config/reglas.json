@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "_comentario": "Reglas compartidas por el motor PowerShell (motor\\Motor-Almacenamiento.ps1) y el gestor visual. config\\reglas.local.json (no versionado) se fusiona encima: los objetos se combinan clave a clave y las listas o textos se reemplazan completos. Las categorías pueden ser una clave de 'taxonomia' o una ruta relativa literal.",
+  "_comentario": "Reglas genéricas compartidas por el motor (motor\\Motor-Almacenamiento.ps1) y el gestor. Capas: este archivo -> config\\taxonomias\\<idioma>.json (si config.json elige otro idioma) -> config\\reglas.local.json (personal, no versionado). Los objetos se combinan clave a clave y las listas o textos se reemplazan completos. Lo propio de cada equipo (nube, bibliotecas de juegos, cachés) lo detecta la configuración inicial y va en config.json.",
   "taxonomia": {
     "TFG": "Universidad_Academico\\TFG_Proyecto_Graduacion",
     "Ingles": "Universidad_Academico\\Ingles_Idiomas",
@@ -361,18 +361,12 @@
     "protegidas_por_nombre": [
       "WindowsApps",
       "WpSystem",
-      "XboxGames",
       "Program Files*",
-      "SteamLibrary",
-      "Riot Games",
-      "Battle.net",
       "WUDownloadCache",
-      "MySQL",
-      "SQL20*",
-      "Microsoft SQL Server*",
       "GodMode.*",
       "scoped_dir*",
-      "Documents"
+      "System Volume Information",
+      "$*"
     ],
     "archivos_conservar": [],
     "patron_nombre_tecnico": "nombre_tecnico",
@@ -413,16 +407,20 @@
     "categoria_defecto": "Carpetas"
   },
   "caches": {
-    "_comentario": "Cachés regenerables que se mueven al destino dejando una junction. Quedan fuera a propósito las carpetas de datos de apps marcadas como intocables, las apps MSIX y uv (usa enlaces duros).",
+    "_comentario": "Lista por defecto si config.json no trae la suya (la configuración inicial la genera a partir de config\\catalogo_caches.json). Cachés regenerables que se mueven al destino dejando una junction.",
     "carpeta_destino": "Cache_Aplicaciones_Enlazadas",
     "lista": [
       {
-        "nombre": "NetBeans_Cache",
-        "ruta": "%LOCALAPPDATA%\\NetBeans\\Cache",
+        "nombre": "npm_cache",
+        "ruta": "%LOCALAPPDATA%\\npm-cache",
         "procesos": [
-          "netbeans64",
-          "netbeans"
+          "node"
         ]
+      },
+      {
+        "nombre": "pip_cache",
+        "ruta": "%LOCALAPPDATA%\\pip\\cache",
+        "procesos": []
       },
       {
         "nombre": "NVIDIA_DXCache",
@@ -430,14 +428,12 @@
         "procesos": []
       },
       {
-        "nombre": "npm_cache",
-        "ruta": "%LOCALAPPDATA%\\npm-cache",
-        "procesos": []
-      },
-      {
-        "nombre": "pip_cache",
-        "ruta": "%LOCALAPPDATA%\\pip\\cache",
-        "procesos": []
+        "nombre": "NetBeans_Cache",
+        "ruta": "%LOCALAPPDATA%\\NetBeans\\Cache",
+        "procesos": [
+          "netbeans64",
+          "netbeans"
+        ]
       }
     ]
   },
@@ -446,7 +442,7 @@
     "lista": []
   },
   "intocables": {
-    "_comentario": "Nunca se mueven. 'rutas' admite variables de entorno y comodines por segmento; las que no se puedan expandir se ignoran. 'nombres' se compara con cada segmento de la ruta. 'rutas_extra' se suma a 'rutas' (úsala en reglas.local.json para proteger carpetas de apps propias sin copiar la lista).",
+    "_comentario": "Nunca se mueven. 'rutas' admite variables de entorno y comodines por segmento. 'nombres' se compara con cada segmento de la ruta (solo nombres estructurales, no de juegos concretos). 'marcadores_biblioteca': una carpeta que los contiene (o que está dentro de una que los contiene) es una biblioteca de juegos o apps. Las bibliotecas, launchers y carpetas de nube concretas del equipo las detecta la configuración inicial (config.json).",
     "rutas": [
       "%SystemRoot%",
       "%ProgramFiles%",
@@ -473,27 +469,14 @@
       "%LOCALAPPDATA%\\Packages\\Microsoft.*"
     ],
     "nombres": [
-      "Steam",
-      "SteamLibrary",
       "steamapps",
-      "XboxGames",
       "WindowsApps",
       "WpSystem",
       "ModifiableWindowsApps",
-      "Riot Games",
-      "Riot Client",
-      "Battle.net",
-      "Blizzard*",
-      "Epic Games",
-      "EA Games",
-      "GOG Galaxy",
-      "Ubisoft Game Launcher",
-      "MySQL",
-      "MariaDB*",
       "Microsoft SQL Server*",
       "MSSQL*",
-      "SQL20*",
-      "SQL Server*",
+      "MySQL",
+      "MariaDB*",
       "PostgreSQL",
       ".git"
     ],
@@ -528,7 +511,14 @@
     "marcadores_repo": [
       ".git"
     ],
-    "rutas_extra": []
+    "rutas_extra": [],
+    "marcadores_biblioteca": [
+      "steamapps",
+      "libraryfolder.vdf",
+      ".egstore",
+      "appxmanifest.xml",
+      "MicrosoftGame.config"
+    ]
   },
   "analisis": {
     "_comentario": "Solo para el gestor visual: qué carpetas medir y qué categorías se tratan como 'Revisar' aunque tengan destino.",

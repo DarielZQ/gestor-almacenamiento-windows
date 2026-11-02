@@ -41,7 +41,8 @@ param(
     [switch]$ReorganizarRaizD,
     [switch]$OmitirSueltos,      # no procesar la fase 1 (útil para correr solo otra fase)
     [string]$Deshacer,
-    [string]$RaizDestino = 'D:\',
+    [string]$RaizDestino,        # sin valor fijo: sale de -Config (config\config.json) si no se pasa
+    [string]$Config,             # configuración del equipo generada por la configuración inicial
     [int]$OmitirRecientesHoras = 24,
     # --- Gestor visual ---
     [string]$PlanAprobado,
@@ -71,28 +72,59 @@ function Merge-Reglas($base, $extra) {
     }
 }
 
+function Get-Prop($objeto, [string]$nombre, $defecto = $null) {
+    if ($null -ne $objeto -and $objeto.PSObject.Properties[$nombre]) { return $objeto.PSObject.Properties[$nombre].Value }
+    return $defecto
+}
+
+function Read-Json([string]$ruta) { return Get-Content -LiteralPath $ruta -Raw -Encoding UTF8 | ConvertFrom-Json }
+
 if (-not $Reglas) {
     $Reglas = @((Join-Path $PSScriptRoot '..\config\reglas.json'), (Join-Path $PSScriptRoot 'config\reglas.json')) |
         Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 }
 if (-not $Reglas -or -not (Test-Path -LiteralPath $Reglas)) { throw 'No se encuentra config\reglas.json (pásalo con -Reglas).' }
 $Reglas = (Resolve-Path -LiteralPath $Reglas).ProviderPath
-$R = Get-Content -LiteralPath $Reglas -Raw -Encoding UTF8 | ConvertFrom-Json
+$dirConfig = Split-Path -Parent $Reglas
+
+# Configuración del equipo (capas: valores del repo -> config.json del equipo -> reglas.local.json personal).
+if (-not $Config -and $env:GESTOR_CONFIG) { $Config = $env:GESTOR_CONFIG }
+if (-not $Config) { $candidata = Join-Path $dirConfig 'config.json'; if (Test-Path -LiteralPath $candidata) { $Config = $candidata } }
+$C = $null
+if ($Config) {
+    if (-not (Test-Path -LiteralPath $Config)) { throw "No existe la configuración $Config" }
+    $C = Read-Json $Config
+}
+
+$R = Read-Json $Reglas
+# Taxonomía en otro idioma (config.taxonomia = 'en'...), encima de la de reglas.json.
+$idioma = [string](Get-Prop $C 'taxonomia' 'es')
+$taxIdioma = Join-Path $dirConfig "taxonomias\$idioma.json"
+if ($idioma -and $idioma -ne 'es' -and (Test-Path -LiteralPath $taxIdioma)) { Merge-Reglas $R (Read-Json $taxIdioma) }
 $reglasLocales = [IO.Path]::ChangeExtension($Reglas, '.local.json')
-if (Test-Path -LiteralPath $reglasLocales) { Merge-Reglas $R (Get-Content -LiteralPath $reglasLocales -Raw -Encoding UTF8 | ConvertFrom-Json) }
+if (Test-Path -LiteralPath $reglasLocales) { Merge-Reglas $R (Read-Json $reglasLocales) }
 
 # ---------------------------------------------------------------------------
 # 0. Verificaciones previas
 # ---------------------------------------------------------------------------
+if (-not $RaizDestino) { $RaizDestino = [string](Get-Prop $C 'raiz_destino' '') }
+if (-not $RaizDestino) {
+    throw 'No hay destino configurado. Ejecuta instalar.ps1 (configuración inicial) o pasa -RaizDestino.'
+}
 if (-not (Test-Path -LiteralPath $RaizDestino)) {
-    throw "No se encuentra $RaizDestino. ¿Está conectado el disco de destino (USB)?"
+    throw "No se encuentra $RaizDestino. ¿Está conectado el disco de destino?"
 }
 $RaizDestino = [IO.Path]::GetFullPath($RaizDestino)
 if (-not $RaizDestino.EndsWith('\')) { $RaizDestino += '\' }
 $letraDestino = $RaizDestino.Substring(0, 1)
 # DriveInfo en lugar de Get-Volume: misma información y sin cargar el módulo Storage (más de 1 s).
 $volDestino = New-Object IO.DriveInfo $letraDestino
-if ($volDestino.DriveFormat -ne 'NTFS') { throw "$RaizDestino no es NTFS; las junctions no funcionarían." }
+# Junctions: solo en NTFS y si la configuración no las desactiva (por ejemplo, destino USB).
+$permitirJunctions = [bool](Get-Prop $C 'permitir_junctions' $true)
+if ($volDestino.DriveFormat -ne 'NTFS') {
+    if ($ReubicarCaches -or $EnlazarVMApp) { throw "$RaizDestino no es NTFS; las junctions no funcionarían." }
+    $permitirJunctions = $false
+}
 
 $perfil = $env:USERPROFILE
 $claveCarpetas = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders'
@@ -102,6 +134,7 @@ $documentos = [Environment]::GetFolderPath('MyDocuments')
 $raizOneDrive = $env:OneDrive
 
 # Dónde se escribe el CSV. Los modos de solo lectura (-Analizar, -ListarReferencias) no escriben nada.
+if (-not $DirRegistro -and $Ejecutar -and (Get-Prop $C 'dir_registro')) { $DirRegistro = [string](Get-Prop $C 'dir_registro') }
 if (-not $DirRegistro) { $DirRegistro = if ($Ejecutar) { Join-Path $RaizDestino 'Registro_Migracion_DiscoC' } else { $PSScriptRoot } }
 if ($Deshacer) { $prefijo = 'deshacer'; $marca = Get-Date -Format 'yyyy-MM-dd_HHmmss' }
 elseif ($PlanAprobado) { $prefijo = if ($Ejecutar) { 'migracion_plan' } else { 'simulacion_plan' }; $marca = Get-Date -Format 'yyyy-MM-dd_HHmmss' }
@@ -213,11 +246,6 @@ function Test-BajoPatron([string]$ruta, [string]$patron) {
     return $true
 }
 
-function Get-Prop($objeto, [string]$nombre, $defecto = $null) {
-    if ($null -ne $objeto -and $objeto.PSObject.Properties[$nombre]) { return $objeto.PSObject.Properties[$nombre].Value }
-    return $defecto
-}
-
 # ---------------------------------------------------------------------------
 # 1. Taxonomía y reglas de clasificación (los datos están en config\reglas.json)
 # ---------------------------------------------------------------------------
@@ -276,8 +304,22 @@ $nombresIntocables = @(@($R.intocables.nombres) + @(Get-Prop $R.intocables 'proy
 $extIntocables = @($R.intocables.extensiones | ForEach-Object { ([string]$_).ToLower() })
 $nombresNoBD = @(Get-Prop $R.intocables 'nombres_no_bd' @())
 $marcadoresRepo = @($R.intocables.marcadores_repo)
-$script:cacheRepo = New-Object 'System.Collections.Generic.Dictionary[string,bool]' ([StringComparer]::OrdinalIgnoreCase)
+# Marcadores de bibliotecas de juegos o apps (Steam, Epic, Xbox...): detección por contenido, no por nombre.
+$marcadoresBiblioteca = @(Get-Prop $R.intocables 'marcadores_biblioteca' @())
+$script:cacheRepo = New-Object 'System.Collections.Generic.Dictionary[string,string]' ([StringComparer]::OrdinalIgnoreCase)
 $script:referencias = $null
+
+# Rutas detectadas en este equipo por la configuración inicial (nube, bibliotecas de juegos, launchers...).
+$intocablesDetectados = @(foreach ($d in @(Get-Prop $C 'intocables_detectados' @())) {
+    $rutaDet = if ($d -is [string]) { $d } else { [string](Get-Prop $d 'ruta' '') }
+    if ($rutaDet) {
+        $motivoDet = if ($d -is [string]) { 'detectada en el equipo' } else { [string](Get-Prop $d 'motivo' 'detectada en el equipo') }
+        [pscustomobject]@{ Ruta = [Environment]::ExpandEnvironmentVariables($rutaDet).TrimEnd('\'); Motivo = $motivoDet }
+    }
+})
+
+# Cachés: la lista del equipo (config.json, con 'habilitada') sustituye a la genérica de reglas.json.
+$listaCaches = @(if ($null -ne (Get-Prop $C 'caches')) { @(Get-Prop $C 'caches' @()) | Where-Object { [bool](Get-Prop $_ 'habilitada' $true) } } else { @($R.caches.lista) })
 
 function ConvertTo-RutaLimpia([string]$s) {
     if (-not $s) { return $null }
@@ -314,6 +356,11 @@ function Get-Referencias {
         $ruta = ConvertTo-RutaLimpia $p
         if ($ruta) { [void]$lista.Add([pscustomobject]@{ fuente = 'PATH'; campo = 'Path'; ruta = $ruta }) }
     }
+    # Servicios de Windows: su ejecutable no puede cambiar de sitio.
+    foreach ($clave in @(Get-ChildItem 'HKLM:\SYSTEM\CurrentControlSet\Services' -ErrorAction SilentlyContinue)) {
+        try { $ruta = ConvertTo-RutaLimpia "$($clave.GetValue('ImagePath'))" } catch { $ruta = $null }
+        if ($ruta) { [void]$lista.Add([pscustomobject]@{ fuente = 'Servicio'; campo = $clave.PSChildName; ruta = $ruta }) }
+    }
 
     # Índices: todo ancestro de una ruta referenciada (mover ese ancestro rompería la referencia)
     # y las carpetas de instalación (mover algo de dentro rompería el programa).
@@ -347,25 +394,37 @@ function Get-ReferenciaAfectada([string]$ruta) {
     return $null
 }
 
-function Test-EnRepoGit([string]$dir) {
-    # ¿Algún ancestro (incluido $dir) es un repositorio git?
+function Get-MarcadorEn([string]$dir) {
+    # Motivo si $dir es un repositorio git o una biblioteca de juegos/apps; '' si no.
+    foreach ($m in $marcadoresRepo) { if (Test-Path -LiteralPath (Join-Path $dir $m)) { return 'repositorio git' } }
+    foreach ($m in $marcadoresBiblioteca) {
+        if (Get-ChildItem -LiteralPath $dir -Filter $m -Force -ErrorAction SilentlyContinue | Select-Object -First 1) { return "biblioteca de juegos o apps (contiene $m)" }
+    }
+    return ''
+}
+
+function Get-MarcadorAncestro([string]$dir) {
+    # ¿Algún ancestro (incluido $dir) es un repositorio git o una biblioteca? Con caché por carpeta.
     $p = $dir
     $vistos = @()
     while ($p -and $p.Length -gt 3) {
         if ($script:cacheRepo.ContainsKey($p)) { $res = $script:cacheRepo[$p]; foreach ($v in $vistos) { $script:cacheRepo[$v] = $res }; return $res }
         $vistos += $p
-        foreach ($m in $marcadoresRepo) {
-            if (Test-Path -LiteralPath (Join-Path $p $m)) { foreach ($v in $vistos) { $script:cacheRepo[$v] = $true }; return $true }
-        }
+        $res = Get-MarcadorEn $p
+        if ($res) { foreach ($v in $vistos) { $script:cacheRepo[$v] = $res }; return $res }
         $p = [IO.Path]::GetDirectoryName($p)
     }
-    foreach ($v in $vistos) { $script:cacheRepo[$v] = $false }
-    return $false
+    foreach ($v in $vistos) { $script:cacheRepo[$v] = '' }
+    return ''
 }
 
 function Get-MotivoIntocableSinControl([string]$ruta, [bool]$esCarpeta) {
     $ruta = [IO.Path]::GetFullPath($ruta).TrimEnd('\')
     foreach ($p in $rutasIntocables) { if (Test-BajoPatron $ruta $p) { return "ruta protegida ($p)" } }
+    foreach ($d in $intocablesDetectados) {
+        if (Test-Dentro $ruta $d.Ruta) { return "$($d.Motivo) ($($d.Ruta))" }
+        if (Test-Dentro $d.Ruta $ruta) { return "contiene una ruta protegida: $($d.Motivo) ($($d.Ruta))" }
+    }
     $segs = $ruta.Split('\')
     for ($i = 1; $i -lt $segs.Count; $i++) {
         foreach ($n in $nombresIntocables) { if ($segs[$i] -like $n) { return "nombre protegido: $($segs[$i])" } }
@@ -378,14 +437,15 @@ function Get-MotivoIntocableSinControl([string]$ruta, [bool]$esCarpeta) {
         $it = Get-Item -LiteralPath $ruta -Force
         if ($it.Attributes -band [IO.FileAttributes]::ReparsePoint) { return 'es un enlace simbólico o junction' }
         if ($esCarpeta) {
-            foreach ($m in $marcadoresRepo) { if (Test-Path -LiteralPath (Join-Path $ruta $m)) { return 'repositorio git' } }
+            $marca = Get-MarcadorEn $ruta
+            if ($marca) { return $marca }
             $bd = @(Get-ChildItem -LiteralPath $ruta -File -Force -ErrorAction SilentlyContinue |
                 Where-Object { $extIntocables -contains $_.Extension.ToLower() -and $nombresNoBD -notcontains $_.Name } | Select-Object -First 1)
             if ($bd.Count) { return "contiene bases de datos ($($bd[0].Name))" }
         }
     }
     $padre = [IO.Path]::GetDirectoryName($ruta)
-    if ($padre -and (Test-EnRepoGit $padre)) { return 'está dentro de un repositorio git' }
+    if ($padre) { $marca = Get-MarcadorAncestro $padre; if ($marca) { return "está dentro de: $marca" } }
     return Get-ReferenciaAfectada $ruta
 }
 
@@ -459,7 +519,7 @@ function Get-DecisionArchivoRaizD($f) {
 }
 
 function Get-CacheConocida([string]$ruta) {
-    foreach ($c in @($R.caches.lista)) {
+    foreach ($c in $listaCaches) {
         if ([Environment]::ExpandEnvironmentVariables([string]$c.ruta).TrimEnd('\') -ieq $ruta.TrimEnd('\')) { return $c }
     }
     return $null
@@ -471,6 +531,7 @@ function Get-DecisionCache($item) {
     $c = Get-CacheConocida $item.FullName
     if (-not $c) { return New-Decision 'REVISAR' 'no es una caché conocida de reglas.json' $null }
     if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { return New-Decision 'CONSERVAR' 'ya enlazada (junction)' $null }
+    if (-not $permitirJunctions) { return New-Decision 'REVISAR' 'junctions desactivadas en la configuración (destino USB o no NTFS)' "Junction: $($c.nombre)" }
     $abiertos = @(@($c.procesos) | Where-Object { $_ } | ForEach-Object { Get-Process -Name $_ -ErrorAction SilentlyContinue })
     if ($abiertos.Count -gt 0) { return New-Decision 'REVISAR' "cierra $(@($c.procesos) -join '/') antes de reubicarla" "Junction: $($c.nombre)" }
     if (Test-Path -LiteralPath (Get-DestinoCache $c)) { return New-Decision 'REVISAR' "ya existe $(Get-DestinoCache $c)" "Junction: $($c.nombre)" }
@@ -598,6 +659,7 @@ function Test-OperacionPlan($op, [ref]$bytesRef) {
         $bytesRef.Value = if ($null -ne $bytesPlan) { [long]$bytesPlan } else { Get-TamanoCarpeta $origen }
     }
     if ($tipo -eq 'Junction') {
+        if (-not $permitirJunctions) { return 'OMITIDO: junctions desactivadas en la configuración (destino USB o no NTFS)' }
         $c = Get-CacheConocida $origen
         if (-not $c) { return 'OMITIDO: solo se enlazan las cachés conocidas de reglas.json' }
         $abiertos = @(@($c.procesos) | Where-Object { $_ } | ForEach-Object { Get-Process -Name $_ -ErrorAction SilentlyContinue })
@@ -720,10 +782,12 @@ if ($IncluirCarpetasDescargas -and -not (Test-EnOneDrive $descargas)) {
 #   - las carpetas de datos de apps marcadas como intocables en reglas.json;
 #   - apps MSIX (dentro de Packages): Windows no soporta bien junctions ahí;
 #   - uv: su caché usa enlaces duros hacia los entornos virtuales.
-if ($ReubicarCaches) {
+if ($ReubicarCaches -and -not $permitirJunctions) {
+    Write-Warning 'Reubicación de cachés omitida: las junctions están desactivadas en la configuración (destino USB o no NTFS).'
+} elseif ($ReubicarCaches) {
     Write-Host "`n--- Cachés pesadas -> junction en D: ---" -ForegroundColor Cyan
     $raizCaches = Join-Path $RaizDestino ([string]$R.caches.carpeta_destino)
-    foreach ($c in @($R.caches.lista)) {
+    foreach ($c in $listaCaches) {
         $ruta = [Environment]::ExpandEnvironmentVariables([string]$c.ruta)
         if (-not (Test-Path -LiteralPath $ruta)) { continue }
         $procesos = @(@($c.procesos) | Where-Object { $_ })
@@ -744,7 +808,9 @@ if ($ReubicarCaches) {
 # 5. Fase 4 (opcional): carpetas pesadas de apps de escritorio -> junction en D:
 #    La lista está en reglas.json (enlaces_app.lista); la app debe estar cerrada.
 # ---------------------------------------------------------------------------
-if ($EnlazarVMApp) {
+if ($EnlazarVMApp -and -not $permitirJunctions) {
+    Write-Warning 'Reubicación de carpetas de apps omitida: las junctions están desactivadas en la configuración.'
+} elseif ($EnlazarVMApp) {
     $enlaces = @(@(Get-Prop (Get-Prop $R 'enlaces_app') 'lista' @()) | Where-Object { $_ -and [bool](Get-Prop $_ 'habilitada' $true) })
     if (-not $enlaces.Count) { Write-Warning 'No hay carpetas de apps habilitadas en enlaces_app (reglas.json o reglas.local.json).' }
     foreach ($ea in $enlaces) {

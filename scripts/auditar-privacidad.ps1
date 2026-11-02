@@ -97,7 +97,7 @@ function Test-Texto([string]$donde, [string]$texto, $reVetados = $reTerminos) {
         foreach ($k in $patrones.Keys) { if ($linea -match $patrones[$k]) { Add-Hallazgo "${donde}:$n" $k } }
         foreach ($m in [regex]::Matches($linea, $reUnidad)) {
             $segmento = $m.Groups[3].Value.Trim()
-            if ($segmento -and -not $permitidosUnidad.Contains($segmento) -and $segmento -notmatch '^(<|\$|%|\{)') {
+            if ($segmento -and -not $permitidosUnidad.Contains($segmento) -and $segmento -notmatch '^(<|\$|%|\{|Ejemplo)') {
                 Add-Hallazgo "${donde}:$n" "ruta de unidad fuera de la taxonomía genérica ($($m.Groups[1].Value):\$segmento)"
             }
         }

@@ -30,10 +30,11 @@ def _como_lista(valor) -> list:
 
 
 class Motor:
-    def __init__(self, ruta_motor: str, raiz_destino: str, dir_trabajo: str,
-                 ruta_reglas: str | None = None, timeout: int = 3600):
+    def __init__(self, ruta_motor: str, raiz_destino: str | None, dir_trabajo: str,
+                 ruta_reglas: str | None = None, timeout: int = 3600, ruta_config: str | None = None):
         self.ruta_motor = str(ruta_motor)
         self.raiz_destino = raiz_destino
+        self.ruta_config = ruta_config
         self.dir_trabajo = Path(dir_trabajo)
         self.ruta_reglas = ruta_reglas
         self.timeout = timeout
@@ -43,11 +44,17 @@ class Motor:
     def _archivo(self, prefijo: str, ext: str = ".json") -> Path:
         return self.dir_trabajo / f"{prefijo}_{uuid.uuid4().hex[:10]}{ext}"
 
-    def _invocar(self, args: list[str], salida: Path, timeout: int | None = None) -> dict:
+    def _invocar(self, args: list[str], salida: Path, timeout: int | None = None, ruta_reglas: str | None = None) -> dict:
+        if not self.raiz_destino and not self.ruta_config:
+            raise ErrorMotor("No hay destino configurado: completa la configuración inicial.")
         cmd = ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
-               "-File", self.ruta_motor, "-RaizDestino", self.raiz_destino, "-SalidaJson", str(salida)]
-        if self.ruta_reglas:
-            cmd += ["-Reglas", self.ruta_reglas]
+               "-File", self.ruta_motor, "-SalidaJson", str(salida)]
+        if self.ruta_config:
+            cmd += ["-Config", self.ruta_config]
+        if self.raiz_destino:
+            cmd += ["-RaizDestino", self.raiz_destino]
+        if ruta_reglas or self.ruta_reglas:
+            cmd += ["-Reglas", ruta_reglas or self.ruta_reglas]
         cmd += args
         proc = subprocess.run(cmd, capture_output=True, timeout=timeout or self.timeout,
                               creationflags=CREATE_NO_WINDOW if os.name == "nt" else 0)
@@ -64,14 +71,15 @@ class Motor:
         return datos
 
     # ------------------------------------------------------------------
-    def analizar(self, elementos: list[dict], lote: int = 1500) -> dict:
+    def analizar(self, elementos: list[dict], lote: int = 1500, ruta_reglas: str | None = None) -> dict:
         """elementos: [{id, ruta, contexto}] -> {id: {codigo, motivo, categoria, destino}}. Solo lectura."""
         resultado: dict = {}
         for i in range(0, len(elementos), lote):
             entrada = self._archivo("analizar_in")
             entrada.write_text(json.dumps({"elementos": elementos[i:i + lote]}, ensure_ascii=False), encoding="utf-8")
             try:
-                datos = self._invocar(["-Analizar", str(entrada)], self._archivo("analizar_out"), timeout=1800)
+                datos = self._invocar(["-Analizar", str(entrada)], self._archivo("analizar_out"), timeout=1800,
+                                      ruta_reglas=ruta_reglas)
             finally:
                 entrada.unlink(missing_ok=True)
             for r in _como_lista(datos.get("resultados")):

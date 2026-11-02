@@ -52,7 +52,8 @@ mueve la carpeta de `<raiz_destino>\Cache_Aplicaciones_Enlazadas\<Nombre>` a su 
 
 ## Estado exacto
 - Rama `main` con un único commit, marcado con el tag local `etapa-1`. Sin remoto. Árbol limpio y auditoría limpia.
-- La etapa 2 (portabilidad) no está empezada en el repositorio: su diseño está en `PROJECT_STATUS.md`, punto 1.
+- Etapa 2 en curso (ver `PROJECT_STATUS.md`, punto 1): hechos la comprobación de versión y la configuración por capas
+  con `-Config`; siguen los detectores, la configuración inicial y el instalador.
 
 ## Siguiente paso recomendado
 1. Publicar `etapa-1` (punto 2 de `PROJECT_STATUS.md`).

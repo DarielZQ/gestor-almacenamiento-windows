@@ -1,7 +1,10 @@
 {
   "puerto": 8742,
-  "raiz_destino": "D:\\",
+  "raiz_destino": null,
   "dir_registro": null,
+  "modo": "completo",
+  "taxonomia": "es",
+  "permitir_junctions": true,
   "horas_recientes": 2,
   "umbral_grande_mb": 500,
   "vigilancia_minutos": 10,
@@ -19,5 +22,7 @@
     "escritorio": null,
     "documentos": null,
     "raiz_sistema": null
-  }
+  },
+  "intocables_detectados": [],
+  "caches": null
 }

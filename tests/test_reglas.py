@@ -41,8 +41,11 @@ def test_intocables_obligatorios_presentes():
     assert r["enlaces_app"]["lista"] == []
     for ext in (".mdf", ".ldf", ".sqlite", ".db"):
         assert ext in r["intocables"]["extensiones"]
-    for juego in ("Steam", "SteamLibrary", "XboxGames", "Riot Games", "Battle.net"):
-        assert juego in r["intocables"]["nombres"]
+    # Bibliotecas de juegos y apps: por contenido (marcadores), no por nombres de juegos o launchers concretos
+    for marcador in ("steamapps", "libraryfolder.vdf", ".egstore"):
+        assert marcador in r["intocables"]["marcadores_biblioteca"]
+    for nombre in r["intocables"]["nombres"]:
+        assert nombre.lower() not in ("steam", "steamlibrary", "riot games", "battle.net", "epic games")
     assert ".git" in r["intocables"]["marcadores_repo"]
 
 

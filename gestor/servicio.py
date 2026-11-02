@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 
 from . import duplicados, respaldo
-from .config import cargar_reglas, expandir
+from .config import cargar_reglas, config_para_motor, escribir_json, expandir
 from .db import Db, ahora
 from .escaner import Candidato, Escaner
 from .motor import Motor
@@ -49,10 +49,28 @@ class Servicio:
         self.dir_datos = Path(cfg["dir_datos"])
         self.dir_datos.mkdir(parents=True, exist_ok=True)
         self.db = db or Db(self.dir_datos / "gestor.sqlite")
-        self.motor = motor or Motor(cfg["ruta_motor"], cfg["raiz_destino"], str(self.dir_datos / "tmp"),
-                                    ruta_reglas=cfg.get("ruta_reglas"))
+        self._motor_propio = motor is None
+        self.motor = motor or self._crear_motor()
         # Si el servidor se cerró a mitad de un escaneo, ese escaneo no puede seguir "en curso".
         self.db.ejecutar("UPDATE escaneos SET estado='interrumpido', fin=? WHERE estado='en_curso'", (ahora(),))
+
+    def _crear_motor(self) -> Motor:
+        """El motor recibe la configuración del equipo con -Config (archivo derivado en datos/tmp)."""
+        ruta = self.dir_datos / "tmp" / "config_motor.json"
+        escribir_json(ruta, config_para_motor(self.cfg))
+        return Motor(self.cfg["ruta_motor"], self.cfg.get("raiz_destino"), str(self.dir_datos / "tmp"),
+                     ruta_reglas=self.cfg.get("ruta_reglas"), ruta_config=str(ruta))
+
+    def recargar(self, cfg: dict, reglas: dict | None = None) -> None:
+        """Aplica una configuración nueva (por ejemplo, tras la configuración inicial) sin reiniciar."""
+        self.cfg = cfg
+        self.reglas = reglas or cargar_reglas(cfg["ruta_reglas"], cfg.get("taxonomia"))
+        if self._motor_propio:
+            self.motor = self._crear_motor()
+
+    def exigir_configuracion(self) -> None:
+        if not self.cfg.get("raiz_destino"):
+            raise ErrorGestor("Falta la configuración inicial: elige el disco o la carpeta de destino.")
 
     # ==================================================================
     # Escanear + Analizar + Proponer
@@ -87,6 +105,9 @@ class Servicio:
         if c.zona == "grandes":
             return {"clasificacion": "Revisar", "motivo": "archivo grande fuera de Descargas y Escritorio: confirma que puede moverse",
                     "categoria": categoria, "destino": destino}
+        if self.cfg.get("modo") == "solo_analisis" and _unidad(c.ruta) == _unidad(destino):
+            return {"clasificacion": "Revisar", "motivo": "el destino está en el mismo disco: organiza pero no libera espacio",
+                    "categoria": categoria, "destino": destino}
         dudosas = self.reglas.get("analisis", {}).get("categorias_revisar", [])
         if any(_dentro(categoria or "", d) for d in dudosas):
             return {"clasificacion": "Revisar", "motivo": "clasificación dudosa: irá a una carpeta de triage",
@@ -102,6 +123,7 @@ class Servicio:
     def escanear(self, modo: str = "completo", progreso=None) -> dict:
         if modo not in ("rapido", "completo"):
             raise ErrorGestor("modo de escaneo desconocido")
+        self.exigir_configuracion()
         progreso = progreso or (lambda t: None)
         t0 = time.monotonic()
         esc_id = self.db.ejecutar("INSERT INTO escaneos(modo, inicio, estado) VALUES(?,?,?)", (modo, ahora(), "en_curso"))
@@ -268,6 +290,7 @@ class Servicio:
         return None
 
     def ejecutar(self, ids: list[int] | None = None, simular: bool = False, progreso=None) -> dict:
+        self.exigir_configuracion()
         progreso = progreso or (lambda t: None)
         filas = self.db.filas("SELECT * FROM elementos WHERE estado='aprobado' ORDER BY id")
         if ids:
@@ -355,8 +378,8 @@ class Servicio:
         return nuevas
 
     def importar_historial(self) -> int:
-        d = self.cfg["dir_registro"]
-        if not os.path.isdir(d):
+        d = self.cfg.get("dir_registro")
+        if not d or not os.path.isdir(d):
             return 0
         total = 0
         # Todos los registros reales (migracion_*, migracion_plan_*, deshacer_*, escritorio_*...), nunca las simulaciones.
@@ -416,8 +439,8 @@ class Servicio:
     def raices_duplicados(self) -> list[str]:
         r = self.cfg["rutas"]
         raices = [r.get("descargas"), r.get("escritorio"), r.get("documentos")]
-        raiz_d = self.cfg["raiz_destino"]
-        if os.path.isdir(raiz_d):
+        raiz_d = self.cfg.get("raiz_destino")
+        if raiz_d and os.path.isdir(raiz_d):
             primeras = sorted({v.split("\\")[0] for v in self.reglas.get("taxonomia", {}).values() if isinstance(v, str)})
             raices += [os.path.join(raiz_d, p) for p in primeras]
         raices += list(self.cfg.get("duplicados", {}).get("raices_extra", []))
@@ -466,7 +489,10 @@ class Servicio:
 
     def estado(self) -> dict:
         discos = []
-        for etiqueta, ruta in (("Sistema", self.cfg["rutas"].get("raiz_sistema", "C:\\")), ("Destino", self.cfg["raiz_destino"])):
+        for etiqueta, ruta in (("Sistema", self.cfg["rutas"].get("raiz_sistema", "C:\\")), ("Destino", self.cfg.get("raiz_destino"))):
+            if not ruta:
+                discos.append({"etiqueta": etiqueta, "unidad": "—", "presente": False})
+                continue
             try:
                 u = shutil.disk_usage(ruta)
                 discos.append({"etiqueta": etiqueta, "unidad": _unidad(ruta), "total": u.total, "usado": u.used, "libre": u.free, "presente": True})
@@ -483,7 +509,7 @@ class Servicio:
             ultimo["resumen"] = json.loads(ultimo["resumen"])
         liberado = self.db.fila("SELECT COALESCE(SUM(m.mb),0) mb FROM movimientos m WHERE m.estado IN ('MOVIDO','ENLAZADO') "
                                 "AND m.origen LIKE ? AND NOT " + self.SQL_DESHECHO, (_unidad(self.cfg["rutas"].get("raiz_sistema", "C:")) + "\\%",))
-        return {"discos": discos, "conteo": conteo, "libera_potencial_migrable": potencial, "libera_potencial_revisar": revisar,
+        return {"configurado": bool(self.cfg.get("raiz_destino")), "discos": discos, "conteo": conteo, "libera_potencial_migrable": potencial, "libera_potencial_revisar": revisar,
                 "libera_aprobado": aprobado, "en_cola": cola, "ultimo_escaneo": ultimo,
                 "liberado_historico_bytes": int((liberado["mb"] or 0) * 1024 * 1024)}
 
@@ -518,6 +544,6 @@ class Servicio:
         return r
 
     def config_publica(self) -> dict:
-        claves = ("raiz_destino", "dir_registro", "horas_recientes", "umbral_grande_mb", "vigilancia_minutos",
+        claves = ("raiz_destino", "dir_registro", "modo", "taxonomia", "permitir_junctions", "horas_recientes", "umbral_grande_mb", "vigilancia_minutos",
                   "presupuesto_segundos_carpeta", "presupuesto_segundos_zona", "duplicados", "rutas", "dir_datos", "ruta_reglas", "ruta_motor")
         return {k: self.cfg.get(k) for k in claves}
