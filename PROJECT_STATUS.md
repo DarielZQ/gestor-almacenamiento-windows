@@ -28,6 +28,9 @@ Versión 0.1.0 — 2026-11-01. Primera versión funcional y probada.
 - Auditoría de privacidad (`scripts\auditar-privacidad.ps1`) y hooks pre-commit y commit-msg.
 - 46 pruebas automáticas (pytest, incluida una del cliente web en Node) en verde; verificación manual con escaneo real en solo lectura.
 
+- Comprobación de versión entre interfaz, servidor y código en disco, con reinicio desde la interfaz o al usar el
+  acceso directo.
+
 ## Estado de GitHub
 - Tag local `etapa-1`: primera versión lista para publicar (un único commit).
 - Nombre previsto: `gestor-almacenamiento-windows`, privado y sin licencia por ahora.
@@ -62,10 +65,7 @@ Versión 0.1.0 — 2026-11-01. Primera versión funcional y probada.
    - Perfiles: exportar/importar sin datos del equipo salvo que se marque; botón "volver a detectar equipo".
    - Pruebas de portabilidad con detectores simulados (sin D:, destino E:, USB, un disco, sin nube, Steam en otra
      biblioteca, perfil con espacios y tildes) y `docs\ADAPTAR-A-TU-EQUIPO.md`. Alcance: solo Windows.
-2. **Publicar** el tag `etapa-1` como repositorio privado `gestor-almacenamiento-windows`.
-3. **Comprobación de versión:** la interfaz compara la versión que devuelve `/salud` con la suya y muestra
-   "Reinicia el gestor" si difieren; el acceso directo reinicia el servidor si el código cambió (un servidor antiguo
-   en marcha respondía 404 a rutas nuevas como `/api/respaldos`).
+2. Publicado: el tag `etapa-1` está en el repositorio privado `gestor-almacenamiento-windows`.
 4. Permitir elegir o editar el destino de un elemento antes de aprobarlo (con validación de raíz).
 5. Deshacer junctions (`ENLAZADO`): quitar la junction y devolver la carpeta, con las mismas garantías.
 6. Clasificación opcional por contenido (texto de PDF/DOCX) para lo que cae en triage, sin guardar contenido.

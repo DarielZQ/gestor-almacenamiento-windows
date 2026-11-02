@@ -3,6 +3,7 @@
 "use strict";
 
 const TOKEN = document.querySelector('meta[name="gestor-token"]').content;
+const HASH_PAGINA = document.querySelector('meta[name="gestor-hash"]').content;
 const estadoUI = { pestana: "resumen", seleccion: new Set(), seleccionCola: new Set(), limite: 300, tareaVista: null };
 
 // ---------------------------------------------------------------- conexión con el servidor local
@@ -161,8 +162,19 @@ async function pintarContadores() {
   const aprob = e.conteo.filter(c => c.estado === "aprobado").reduce((s, c) => s + c.n, 0);
   document.getElementById("n-aprobados").textContent = aprob || "";
   document.getElementById("min-vigilancia").textContent = e.vigilancia_minutos || "—";
+  comprobarVersion(e.version);
   mostrarTarea(e.tarea);
   if (e.tarea && e.tarea.estado === "en_curso") { clearTimeout(vigilarTarea._t); vigilarTarea._t = setTimeout(vigilarTarea, 1000); }
+}
+
+// ---------------------------------------------------------------- versión
+// El servidor compara su código de arranque con el del disco; la página, el suyo con el del servidor.
+function comprobarVersion(v) {
+  const aviso = Conexion.estadoVersion(HASH_PAGINA, v);
+  document.getElementById("actualizado").classList.toggle("oculto", !aviso);
+  if (aviso) document.getElementById("actualizado-texto").textContent = aviso.mensaje;
+  document.getElementById("btn-reiniciar").textContent = aviso && aviso.accion === "recargar" ? "Recargar página" : "Reiniciar ahora";
+  estadoUI.accionVersion = aviso ? aviso.accion : null;
 }
 
 // ---------------------------------------------------------------- Resumen
@@ -403,6 +415,11 @@ document.addEventListener("DOMContentLoaded", () => {
     catch (e) { avisar(e.message, true); }
   });
   document.getElementById("btn-duplicados").addEventListener("click", () => lanzarTarea("/api/duplicados/buscar", {}));
+  document.getElementById("btn-reiniciar").addEventListener("click", async () => {
+    if (estadoUI.accionVersion === "recargar") { location.reload(); return; }
+    try { await api("/api/reiniciar", {}); avisar("Reiniciando el gestor…"); }
+    catch (e) { avisar(e.message, true); }
+  });
   document.getElementById("btn-respaldar").addEventListener("click", async () => {
     try { const r = await api("/api/respaldos/crear", {}); avisar(r.respaldo ? "Respaldo creado." : "No hay configuración personal que respaldar."); pintarAjustes(); }
     catch (e) { avisar(e.message, true); }

@@ -11,7 +11,7 @@ from conftest import RAIZ
 def test_cliente_http_de_la_interfaz():
     proc = subprocess.run(["node", str(RAIZ / "tests" / "js" / "prueba_conexion.cjs")], capture_output=True, text=True, timeout=60)
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert proc.stdout.count("ok ") == 3
+    assert proc.stdout.count("ok ") == 4
 
 
 def test_la_interfaz_usa_un_unico_cliente_http():

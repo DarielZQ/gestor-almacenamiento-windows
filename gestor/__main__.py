@@ -20,13 +20,14 @@ from .servicio import Servicio
 from .servidor import APP_ID, crear_servidor
 
 
-def instancia_activa(dir_datos: str, puertos: list[int]) -> int | None:
-    """Devuelve el puerto de un gestor ya en marcha, o None."""
+def instancia_activa(dir_datos: str, puertos: list[int], usar_archivo: bool = True) -> int | None:
+    """Devuelve el puerto de un gestor ya en marcha, o None. Con usar_archivo=False solo mira 'puertos'."""
     candidatos = []
-    try:
-        candidatos.append(int(json.loads((Path(dir_datos) / "servidor.json").read_text(encoding="utf-8"))["puerto"]))
-    except (OSError, ValueError, KeyError):
-        pass
+    if usar_archivo:
+        try:
+            candidatos.append(int(json.loads((Path(dir_datos) / "servidor.json").read_text(encoding="utf-8"))["puerto"]))
+        except (OSError, ValueError, KeyError):
+            pass
     candidatos += [p for p in puertos if p not in candidatos]
     for p in candidatos:
         try:
@@ -55,7 +56,7 @@ def main(argv=None) -> int:
     # Si el puerto está ocupado por otra aplicación, se prueban los siguientes (solo con el puerto por defecto).
     intentos = [puerto] if args.puerto is not None else [puerto + i for i in range(20)]
 
-    existente = instancia_activa(cfg["dir_datos"], intentos)
+    existente = instancia_activa(cfg["dir_datos"], intentos, usar_archivo=args.puerto is None)
     if existente:
         url = f"http://127.0.0.1:{existente}/"
         print(f"El gestor ya está abierto en {url}; solo se abre el navegador.")
@@ -101,7 +102,23 @@ def main(argv=None) -> int:
     finally:
         app.parar()
         httpd.server_close()
+    if app.reinicio_solicitado:
+        reiniciar(app.puerto)
     return 0
+
+
+def reiniciar(puerto: int) -> None:
+    """Arranca un servidor nuevo (con el código actual del disco) en el mismo puerto, sin ventana y desacoplado."""
+    import subprocess
+    from .config import RAIZ_PROYECTO
+    ejecutable = sys.executable
+    sin_ventana = Path(ejecutable).with_name("pythonw.exe")
+    if sin_ventana.exists():
+        ejecutable = str(sin_ventana)
+    banderas = 0x00000008 | 0x00000200 if os.name == "nt" else 0  # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+    subprocess.Popen([ejecutable, "-m", "gestor", "--no-abrir", "--puerto", str(puerto)], cwd=str(RAIZ_PROYECTO),
+                     creationflags=banderas, close_fds=True)
+    print(f"[{ahora()}] Reiniciando el gestor con el código actual.")
 
 
 if __name__ == "__main__":

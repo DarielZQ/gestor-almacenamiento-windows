@@ -21,6 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 from . import __version__, respaldo
+from .version import Version
 from .config import DIR_WEB
 from .db import ahora
 from .servicio import ErrorGestor, Servicio
@@ -84,6 +85,8 @@ class Aplicacion:
         self._parar = threading.Event()
         self.ultima_vigilancia = None
         self.httpd = None
+        self.version = Version()
+        self.reinicio_solicitado = False
 
     @property
     def hosts(self) -> set[str]:
@@ -111,6 +114,13 @@ class Aplicacion:
         if self.httpd is not None:
             threading.Thread(target=self.httpd.shutdown, name="parada", daemon=True).start()
         return {"deteniendo": True, "tarea_interrumpida": self.tareas.ocupada()}
+
+    def solicitar_reinicio(self) -> dict:
+        """Detiene el servidor y pide a __main__ que arranque uno nuevo con el código actual del disco."""
+        self.reinicio_solicitado = True
+        r = self.solicitar_parada()
+        r["reiniciando"] = True
+        return r
 
 
 def crear_manejador(app: Aplicacion):
@@ -140,7 +150,7 @@ def crear_manejador(app: Aplicacion):
 
     GET = {
         "/api/estado": lambda q: {**s.estado(), "tarea": app.tareas.actual, "vigilancia_minutos": s.cfg.get("vigilancia_minutos"),
-                                   "ultima_vigilancia": app.ultima_vigilancia},
+                                   "ultima_vigilancia": app.ultima_vigilancia, "version": app.version.estado()},
         "/api/elementos": lambda q: s.elementos(q1(q, "clasificacion"), q1(q, "estado"), q1(q, "zona"), q1(q, "q"),
                                                 q1(q, "cola") == "1", q1(q, "presentes", "1") == "1", q1(q, "orden", "bytes"),
                                                 min(int(q1(q, "limite", "300")), 2000), int(q1(q, "desplazamiento", "0"))),
@@ -164,6 +174,7 @@ def crear_manejador(app: Aplicacion):
         "/api/historial/importar": lambda d: {"importadas": s.importar_historial()},
         "/api/duplicados/buscar": lambda d: lanzar("duplicados", lambda p: s.buscar_duplicados(p)),
         "/api/detener": lambda d: app.solicitar_parada(),
+        "/api/reiniciar": lambda d: app.solicitar_reinicio(),
         "/api/respaldos/crear": lambda d: {"respaldo": s.respaldar_config("manual", forzar=True)},
         "/api/respaldos/restaurar": lambda d: s.restaurar_respaldo(str(d.get("nombre") or "")),
     }
@@ -211,10 +222,11 @@ def crear_manejador(app: Aplicacion):
             if not self._host_ok():
                 return self._json(403, {"error": "host no permitido"})
             url = urlparse(self.path)
-            if url.path == "/salud":  # sin token: solo identifica la app (lo usa iniciar.ps1 para no abrir otra instancia)
-                return self._json(200, {"app": APP_ID, "version": __version__})
+            if url.path == "/salud":  # sin token: identifica la app y su versión (lo usa iniciar.ps1)
+                return self._json(200, {"app": APP_ID, **app.version.estado()})
             if url.path in ("/", "/index.html"):
-                html = (DIR_WEB / "index.html").read_text(encoding="utf-8").replace("__TOKEN__", app.token)
+                html = ((DIR_WEB / "index.html").read_text(encoding="utf-8").replace("__TOKEN__", app.token)
+                        .replace("__HASH__", app.version.hash_arranque))
                 return self._enviar(200, html.encode("utf-8"), TIPOS[".html"])
             if url.path.startswith("/web/"):
                 nombre = url.path[len("/web/"):]

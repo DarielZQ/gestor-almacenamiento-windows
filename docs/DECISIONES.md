@@ -73,3 +73,9 @@
 
 ## 2026-11-01 — Publicación
 - Repositorio `gestor-almacenamiento-windows`, privado y sin licencia por ahora; README solo con texto.
+
+## 2026-11-02 — Comprobación de versión
+- La huella es un hash del código versionado que usa el servidor (Python, web, motor y configuración genérica), con
+  finales de línea normalizados. El servidor guarda la de su arranque y la compara con la del disco en cada `/salud`.
+- La página lleva la huella con la que se sirvió; si difiere de la del servidor, pide recargar.
+- El reinicio desde la interfaz lanza un proceso nuevo desacoplado en el mismo puerto después de cerrar el actual.

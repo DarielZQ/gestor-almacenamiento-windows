@@ -55,6 +55,10 @@ consola no lo detiene. Si el gestor ya está abierto, solo abre el navegador.
 
 - Detenerlo: botón **Detener servidor** (pestaña Ajustes) o `.\detener.ps1`.
 - Diagnóstico: `.\iniciar.ps1 -Consola` (primer plano) y `datos\servidor.log`.
+- Versión: `/salud` devuelve la versión y una huella del código. Si el código cambió en disco, la interfaz muestra
+  "El gestor se actualizó: reinícialo" con un botón de reinicio, e `iniciar.ps1` (y el acceso directo) reinicia el
+  servidor en marcha si es de otra versión.
+- Instancias de prueba aisladas: variables `GESTOR_DATOS` y `GESTOR_CONFIG`, y `iniciar.ps1 -Puerto <n>` (solo mira ese puerto).
 - Si el servidor se cierra con la página abierta, la interfaz muestra un aviso, desactiva las acciones y se
   reconecta sola cuando vuelve (si se reinició, recarga la página para obtener la nueva sesión).
 

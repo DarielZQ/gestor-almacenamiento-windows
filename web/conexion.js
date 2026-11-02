@@ -87,7 +87,17 @@
     return { pedir, reconectar, conectado: () => conectado };
   }
 
-  const api = { crearCliente, mensajeError, ErrorConexion, ErrorServidor, MENSAJE_SIN_SERVIDOR, ESPERAS_MS };
+  // Decide si hay que avisar de una versión distinta. v = {hash, hash_disco, desactualizado} de /api/estado.
+  function estadoVersion(hashPagina, v) {
+    if (!v) return null;
+    if (v.desactualizado)
+      return { accion: "reiniciar", mensaje: "El gestor se actualizó: reinícialo para usar la versión nueva." };
+    if (hashPagina && v.hash && hashPagina !== v.hash)
+      return { accion: "recargar", mensaje: "El gestor se reinició con otra versión: recarga la página." };
+    return null;
+  }
+
+  const api = { crearCliente, mensajeError, estadoVersion, ErrorConexion, ErrorServidor, MENSAJE_SIN_SERVIDOR, ESPERAS_MS };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else raiz.Conexion = api;
 })(typeof window !== "undefined" ? window : globalThis);

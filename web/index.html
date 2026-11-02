@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="gestor-token" content="__TOKEN__">
+  <meta name="gestor-hash" content="__HASH__">
   <title>Gestor de almacenamiento</title>
   <link rel="stylesheet" href="/web/estilos.css">
   <script src="/web/conexion.js" defer></script>
@@ -23,6 +24,11 @@
   <div id="sin-servidor" class="sin-servidor oculto" role="alert">
     El servidor local no está corriendo. Ábrelo con el acceso directo <strong>Gestor de Almacenamiento</strong>.
     <span class="tenue">Se reconectará solo en cuanto vuelva.</span>
+  </div>
+
+  <div id="actualizado" class="sin-servidor oculto" role="alert">
+    <span id="actualizado-texto">El gestor se actualizó: reinícialo para usar la versión nueva.</span>
+    <button id="btn-reiniciar" class="primario">Reiniciar ahora</button>
   </div>
 
   <nav class="pestanas" role="tablist">

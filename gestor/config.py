@@ -71,7 +71,7 @@ def rutas_sistema() -> dict:
 def cargar_config(ruta: Path | None = None, extra: dict | None = None) -> dict:
     """Valores por defecto (config.example.json) + config/config.json local + 'extra' (pruebas)."""
     cfg = _leer_json(DIR_CONFIG / "config.example.json")
-    ruta = Path(ruta) if ruta else DIR_CONFIG / "config.json"
+    ruta = Path(ruta) if ruta else Path(os.environ.get("GESTOR_CONFIG") or DIR_CONFIG / "config.json")
     if ruta.exists():
         cfg = fusionar(cfg, _leer_json(ruta))
     if extra:

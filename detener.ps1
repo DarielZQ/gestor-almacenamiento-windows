@@ -7,12 +7,13 @@
     2. Si no responde, usa el PID de datos\servidor.pid, pero solo si ese proceso es Python ejecutando
        "-m gestor" desde esta carpeta. Nunca detiene otros procesos.
 #>
+param([int]$Puerto = 0)   # por defecto, el de datos\servidor.json
 $ErrorActionPreference = 'Stop'
 $raiz = $PSScriptRoot
-$datos = Join-Path $raiz 'datos'
+$datos = if ($env:GESTOR_DATOS) { $env:GESTOR_DATOS } else { Join-Path $raiz 'datos' }
 $info = Join-Path $datos 'servidor.json'
-if (-not (Test-Path -LiteralPath $info)) { Write-Host 'No hay datos de un servidor en marcha.'; return }
-$puerto = [int](Get-Content -LiteralPath $info -Raw | ConvertFrom-Json).puerto
+if (-not $Puerto -and -not (Test-Path -LiteralPath $info)) { Write-Host 'No hay datos de un servidor en marcha.'; return }
+$puerto = if ($Puerto) { $Puerto } else { [int](Get-Content -LiteralPath $info -Raw | ConvertFrom-Json).puerto }
 $base = "http://127.0.0.1:$puerto"
 
 try {

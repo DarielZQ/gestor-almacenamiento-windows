@@ -54,6 +54,13 @@ async function cabeceras() {
   assert.strictEqual(visto.body, '{"a":1}');
 }
 
+async function versiones() {
+  assert.strictEqual(C.estadoVersion("aaa", { hash: "aaa", desactualizado: false }), null);
+  assert.strictEqual(C.estadoVersion("aaa", { hash: "aaa", desactualizado: true }).accion, "reiniciar");
+  assert.strictEqual(C.estadoVersion("viejo", { hash: "nuevo", desactualizado: false }).accion, "recargar");
+  assert.strictEqual(C.estadoVersion("aaa", undefined), null);
+}
+
 (async () => {
-  for (const f of [servidorCaido, erroresLegibles, cabeceras]) { await f(); console.log(`ok ${f.name}`); }
+  for (const f of [servidorCaido, erroresLegibles, cabeceras, versiones]) { await f(); console.log(`ok ${f.name}`); }
 })().catch(e => { console.error(e); process.exit(1); });
