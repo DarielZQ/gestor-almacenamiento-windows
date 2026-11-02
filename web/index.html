@@ -226,6 +226,18 @@
       <p class="tenue">Copias automáticas de <code>config.json</code> y <code>reglas.local.json</code> cada vez que cambian (se guardan las últimas 20 junto al registro de movimientos). Restaurar una copia guarda antes la configuración actual.</p>
       <div class="fila-acciones"><button id="btn-respaldar">Respaldar ahora</button><span id="dir-respaldos" class="tenue"></span></div>
       <div id="tabla-respaldos" class="tabla-contenedor"></div>
+      <h2>Perfil (exportar e importar)</h2>
+      <p class="tenue">Lleva tu configuración a otro equipo. Sin marcar la casilla, el perfil no incluye datos personales
+        ni del equipo (solo ajustes generales, taxonomía y extensiones). Para detectar un disco nuevo, usa
+        <strong>Volver a detectar equipo</strong> en la pestaña Equipo.</p>
+      <div class="fila-acciones">
+        <label><input id="perfil-personal" type="checkbox"> Incluir datos personales y del equipo</label>
+        <button id="btn-exportar-perfil">Exportar perfil</button>
+        <span class="separador"></span>
+        <label><input id="perfil-aplicar-equipo" type="checkbox"> Aplicar también los datos del equipo</label>
+        <input id="perfil-archivo" type="file" accept=".json,application/json" aria-label="perfil a importar">
+        <button id="btn-importar-perfil">Importar perfil</button>
+      </div>
       <h2>Servidor</h2>
       <div class="fila-acciones">
         <button id="btn-detener" class="peligro">Detener servidor</button>

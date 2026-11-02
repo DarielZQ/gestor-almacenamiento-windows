@@ -19,7 +19,7 @@ import shutil
 import time
 from pathlib import Path
 
-from . import configuracion_inicial, duplicados, respaldo, taxonomia
+from . import configuracion_inicial, duplicados, perfiles, respaldo, taxonomia
 from .config import ErrorConfig, cargar_config, cargar_reglas, config_para_motor, escribir_json, expandir
 from .db import Db, ahora
 from .escaner import Candidato, Escaner
@@ -590,6 +590,23 @@ class Servicio:
         self.reglas = cargar_reglas(self.cfg["ruta_reglas"], self.cfg.get("taxonomia"))
         self.respaldar_config("taxonomía editada")
         return {"guardado": True, "aviso": "Vuelve a escanear para aplicar la taxonomía nueva.", **self.taxonomia()}
+
+    # ==================================================================
+    # Perfiles exportables
+    # ==================================================================
+    def exportar_perfil(self, incluir_personal: bool = False) -> dict:
+        return perfiles.exportar(self.cfg, incluir_personal)
+
+    def importar_perfil(self, perfil: dict, aplicar_equipo: bool = False) -> dict:
+        self.respaldar_config("antes de importar un perfil", forzar=True)
+        try:
+            r = perfiles.importar(self.cfg, perfil, aplicar_equipo)
+            extra = {k: self.cfg[k] for k in ("dir_datos", "ruta_reglas", "ruta_motor", "ruta_config_equipo") if self.cfg.get(k)}
+            self.recargar(cargar_config(self.cfg.get("ruta_config_equipo"), extra=extra))
+        except (perfiles.ErrorPerfil, ErrorConfig) as e:
+            raise ErrorGestor(str(e)) from e
+        self.respaldar_config("perfil importado")
+        return r
 
     def config_publica(self) -> dict:
         claves = ("raiz_destino", "dir_registro", "modo", "taxonomia", "permitir_junctions", "horas_recientes", "umbral_grande_mb", "vigilancia_minutos",

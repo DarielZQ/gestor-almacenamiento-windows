@@ -594,6 +594,25 @@ document.addEventListener("DOMContentLoaded", () => {
     catch (e) { avisar(e.message, true); }
   });
   document.getElementById("btn-guardar-equipo").addEventListener("click", guardarEquipo);
+  document.getElementById("btn-exportar-perfil").addEventListener("click", async () => {
+    try {
+      const personal = document.getElementById("perfil-personal").checked;
+      const p = await api(`/api/perfil/exportar?personal=${personal ? 1 : 0}`);
+      const url = URL.createObjectURL(new Blob([JSON.stringify(p, null, 2)], { type: "application/json" }));
+      const a = el("a", { href: url, download: `perfil-gestor${personal ? "-personal" : ""}.json` });
+      document.body.append(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    } catch (e) { avisar(e.message, true); }
+  });
+  document.getElementById("btn-importar-perfil").addEventListener("click", async () => {
+    const f = document.getElementById("perfil-archivo").files[0];
+    if (!f) { avisar("Elige primero el archivo del perfil."); return; }
+    let perfil;
+    try { perfil = JSON.parse(await f.text()); } catch (e) { avisar("El archivo no es JSON válido.", true); return; }
+    const aplicar = document.getElementById("perfil-aplicar-equipo").checked;
+    if (!(await confirmar("Importar perfil", `Se guardará antes la configuración actual. ${aplicar ? "Se aplicarán también los datos del equipo del perfil." : "No se tocan los datos de este equipo."}`, "Importar"))) return;
+    try { const r = await api("/api/perfil/importar", { perfil, aplicar_equipo: aplicar }); avisar(`Perfil importado (${r.reglas_actualizadas.join(", ") || "ajustes"}).`); refrescar(); }
+    catch (e) { avisar(e.message, true); }
+  });
   document.getElementById("btn-respaldar").addEventListener("click", async () => {
     try { const r = await api("/api/respaldos/crear", {}); avisar(r.respaldo ? "Respaldo creado." : "No hay configuración personal que respaldar."); pintarAjustes(); }
     catch (e) { avisar(e.message, true); }
