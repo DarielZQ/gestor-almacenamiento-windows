@@ -250,7 +250,8 @@ function Test-BajoPatron([string]$ruta, [string]$patron) {
 # 1. Taxonomía y reglas de clasificación (los datos están en config\reglas.json)
 # ---------------------------------------------------------------------------
 $T = @{}
-foreach ($p in $R.taxonomia.PSObject.Properties) { if ($p.Name -notlike '_*') { $T[$p.Name] = [string]$p.Value } }
+# Una categoría con valor null (desde reglas.local.json) queda quitada.
+foreach ($p in $R.taxonomia.PSObject.Properties) { if ($p.Name -notlike '_*' -and $null -ne $p.Value) { $T[$p.Name] = [string]$p.Value } }
 $grupos = @{}
 foreach ($p in $R.extensiones.PSObject.Properties) { $grupos[$p.Name] = @($p.Value | ForEach-Object { ([string]$_).ToLower() }) }
 $patrones = @{}
@@ -260,7 +261,8 @@ function Resolve-Categoria([string]$clave) { if ($T.ContainsKey($clave)) { retur
 
 # Nunca se mueven: accesos directos, configuración y archivos temporales o descargas a medias.
 $extIgnorar = $grupos[[string]$R.archivos.ignorar_grupo]
-$reglasArchivos = @(foreach ($regla in @($R.archivos.reglas)) {
+# Las reglas del usuario (archivos.reglas_usuario, en reglas.local.json) van antes que las genéricas.
+$reglasArchivos = @(foreach ($regla in (@(Get-Prop $R.archivos 'reglas_usuario' @()) + @($R.archivos.reglas))) {
     $exts = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
     foreach ($g in @(Get-Prop $regla 'grupos' @())) { foreach ($e in $grupos[[string]$g]) { [void]$exts.Add($e) } }
     foreach ($e in @(Get-Prop $regla 'extensiones' @())) { [void]$exts.Add(([string]$e).ToLower()) }

@@ -38,6 +38,7 @@
     <button role="tab" data-pestana="ejecutar">Ejecutar <span id="n-aprobados" class="contador"></span></button>
     <button role="tab" data-pestana="historial">Historial</button>
     <button role="tab" data-pestana="duplicados">Duplicados</button>
+    <button role="tab" data-pestana="taxonomia">Taxonomía</button>
     <button role="tab" data-pestana="equipo">Equipo</button>
     <button role="tab" data-pestana="ajustes">Ajustes</button>
   </nav>
@@ -151,6 +152,39 @@
         <span id="resumen-duplicados" class="tenue"></span>
       </div>
       <div id="lista-duplicados"></div>
+    </section>
+
+    <!-- Taxonomía editable -->
+    <section id="p-taxonomia" class="panel oculto">
+      <p class="tenue">Carpetas de destino y reglas de clasificación. Los cambios se guardan en tu capa personal
+        (<code>config\reglas.local.json</code>); usa <strong>Vista previa</strong> para ver qué archivos cambiarían de categoría.
+        Idioma de la taxonomía: <span id="tax-idioma"></span> (se cambia en la pestaña Equipo).</p>
+      <h2>Categorías de destino</h2>
+      <div id="tax-categorias" class="tabla-contenedor"></div>
+      <div class="filtros">
+        <label>Clave nueva <input id="tax-nueva-clave" type="search" placeholder="Fotos_Viaje"></label>
+        <label class="crece">Carpeta de destino <input id="tax-nueva-ruta" type="search" placeholder="Multimedia\Fotos_de_viaje"></label>
+        <button id="btn-tax-agregar">Añadir categoría</button>
+      </div>
+      <h2>Reglas propias</h2>
+      <p class="tenue">Se aplican antes que las genéricas: si un archivo tiene una de estas extensiones (y, si las pones, contiene alguna palabra), va a la categoría elegida.</p>
+      <div id="tax-reglas" class="tabla-contenedor"></div>
+      <div class="filtros">
+        <label>Extensiones <input id="tax-regla-ext" type="search" placeholder=".jpg, .png"></label>
+        <label class="crece">Palabras (opcional) <input id="tax-regla-palabras" type="search" placeholder="viaje, vacaciones"></label>
+        <label>Categoría <select id="tax-regla-cat"></select></label>
+        <button id="btn-tax-regla">Añadir regla</button>
+      </div>
+      <h2>Grupos de extensiones</h2>
+      <div id="tax-extensiones"></div>
+      <h2>Palabras clave (expresiones regulares)</h2>
+      <div id="tax-patrones"></div>
+      <div class="fila-acciones derecha">
+        <button id="btn-tax-previa">Vista previa</button>
+        <button id="btn-tax-guardar" class="primario">Guardar</button>
+      </div>
+      <h2>Vista previa</h2>
+      <div id="tax-resultado" class="tabla-contenedor"></div>
     </section>
 
     <!-- Equipo: configuración inicial y "volver a detectar" -->

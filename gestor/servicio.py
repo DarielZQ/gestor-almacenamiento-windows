@@ -19,7 +19,7 @@ import shutil
 import time
 from pathlib import Path
 
-from . import configuracion_inicial, duplicados, respaldo
+from . import configuracion_inicial, duplicados, respaldo, taxonomia
 from .config import ErrorConfig, cargar_config, cargar_reglas, config_para_motor, escribir_json, expandir
 from .db import Db, ahora
 from .escaner import Candidato, Escaner
@@ -569,6 +569,27 @@ class Servicio:
             raise ErrorGestor(str(e)) from e
         self.respaldar_config("configuración del equipo guardada")
         return {"guardado": str(ruta), **self.equipo()}
+
+    # ==================================================================
+    # Taxonomía editable (capa personal reglas.local.json)
+    # ==================================================================
+    def taxonomia(self) -> dict:
+        return taxonomia.obtener(self.cfg, self.reglas)
+
+    def taxonomia_vista_previa(self, cambios: dict, progreso=None) -> dict:
+        try:
+            return taxonomia.vista_previa(self, cambios, progreso)
+        except taxonomia.ErrorTaxonomia as e:
+            raise ErrorGestor(str(e)) from e
+
+    def taxonomia_guardar(self, cambios: dict) -> dict:
+        try:
+            taxonomia.guardar(self.cfg, cambios)
+        except taxonomia.ErrorTaxonomia as e:
+            raise ErrorGestor(str(e)) from e
+        self.reglas = cargar_reglas(self.cfg["ruta_reglas"], self.cfg.get("taxonomia"))
+        self.respaldar_config("taxonomía editada")
+        return {"guardado": True, "aviso": "Vuelve a escanear para aplicar la taxonomía nueva.", **self.taxonomia()}
 
     def config_publica(self) -> dict:
         claves = ("raiz_destino", "dir_registro", "modo", "taxonomia", "permitir_junctions", "horas_recientes", "umbral_grande_mb", "vigilancia_minutos",

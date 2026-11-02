@@ -124,6 +124,7 @@ async function vigilarTarea() {
     else avisar(resumenTarea(t));
     if ((t.tipo === "ejecucion" || t.tipo === "simulacion") && t.resultado) pintarResultadoEjecucion(t.resultado);
     if (t.tipo === "deteccion" && t.estado !== "error") { cambiarPestana("equipo"); return; }
+    if (t.tipo === "vista_previa" && t.resultado) pintarVistaPrevia(t.resultado);
   }
   refrescar();
 }
@@ -153,7 +154,8 @@ async function refrescar() {
   try {
     await pintarContadores();
     const f = { resumen: pintarResumen, elementos: pintarElementos, cola: pintarCola, ejecutar: pintarEjecutar,
-                historial: pintarHistorial, duplicados: pintarDuplicados, equipo: pintarEquipo, ajustes: pintarAjustes }[estadoUI.pestana];
+                historial: pintarHistorial, duplicados: pintarDuplicados, taxonomia: pintarTaxonomia, equipo: pintarEquipo,
+                ajustes: pintarAjustes }[estadoUI.pestana];
     if (f) await f();
   } catch (e) { avisar(e.message, true); }
 }
@@ -168,7 +170,7 @@ async function pintarContadores() {
   document.getElementById("min-vigilancia").textContent = e.vigilancia_minutos || "—";
   comprobarVersion(e.version);
   // Sin configuración inicial, solo se puede ir a Equipo (y Ajustes): el resto necesita un destino.
-  if (e.configurado === false && !["equipo", "ajustes"].includes(estadoUI.pestana)) { cambiarPestana("equipo"); return; }
+  if (e.configurado === false && !["equipo", "ajustes", "taxonomia"].includes(estadoUI.pestana)) { cambiarPestana("equipo"); return; }
   mostrarTarea(e.tarea);
   if (e.tarea && e.tarea.estado === "en_curso") { clearTimeout(vigilarTarea._t); vigilarTarea._t = setTimeout(vigilarTarea, 1000); }
 }
@@ -370,6 +372,80 @@ async function pintarDuplicados() {
       el("ul", {}, g.rutas.map(x => el("li", { texto: x }))))));
 }
 
+// ---------------------------------------------------------------- Taxonomía editable
+// estadoUI.tax = { original, categorias: [{clave, ruta, en_uso, nueva, quitar}], reglas: [...] }
+async function pintarTaxonomia(recargar) {
+  if (!estadoUI.tax || recargar) {
+    const t = await api("/api/taxonomia");
+    estadoUI.tax = { original: t, categorias: t.taxonomia.map(c => ({ ...c, quitar: false })),
+                     reglas: t.reglas_usuario.map(r => ({ extensiones: r.extensiones, categoria: r.categoria,
+                       palabras: r.patron && t.patrones[r.patron] ? t.patrones[r.patron].replace(/^\(\?i\)/, "").split("|").map(x => x.replace(/\\/g, "")).join(", ") : "" })) };
+    estadoUI.tax.reglasIniciales = JSON.stringify(estadoUI.tax.reglas.map(r => ({ extensiones: r.extensiones, palabras: r.palabras, categoria: r.categoria })));
+  }
+  const T = estadoUI.tax;
+  document.getElementById("tax-idioma").textContent = T.original.idioma === "en" ? "inglés" : "español";
+  document.getElementById("tax-categorias").replaceChildren(tabla([
+    { titulo: "Clave", valor: c => el("td", { clase: "nombre" }, c.clave, c.nueva ? el("span", { clase: "mensaje", texto: "nueva" }) : null) },
+    { titulo: "Carpeta de destino", valor: c => { const i = el("input", { clase: "ruta-editable", value: c.ruta, "aria-label": `ruta de ${c.clave}` });
+        i.addEventListener("input", () => { c.ruta = i.value; }); return el("td", {}, i); } },
+    { titulo: "Uso", valor: c => c.en_uso ? "la usan reglas" : "libre" },
+    { titulo: "Quitar", valor: c => { const k = el("input", { type: "checkbox", "aria-label": `quitar ${c.clave}` });
+        k.checked = c.quitar; k.disabled = c.en_uso; k.addEventListener("change", () => { c.quitar = k.checked; }); return k; } },
+  ], T.categorias));
+  const sel = document.getElementById("tax-regla-cat");
+  sel.replaceChildren(...T.categorias.filter(c => !c.quitar).map(c => el("option", { value: c.clave, texto: `${c.clave} (${c.ruta})` })));
+  document.getElementById("tax-reglas").replaceChildren(tabla([
+    { titulo: "Extensiones", valor: r => r.extensiones.join(", ") },
+    { titulo: "Palabras", valor: r => r.palabras || "—" },
+    { titulo: "Categoría", valor: r => r.categoria },
+    { titulo: "", valor: r => el("td", { clase: "acciones" }, el("button", { clase: "mini", texto: "Quitar",
+        onclick: () => { T.reglas.splice(T.reglas.indexOf(r), 1); pintarTaxonomia(); } })) },
+  ], T.reglas, "Sin reglas propias."));
+  const campos = (obj, prefijo) => Object.entries(obj).map(([k, v]) => {
+    const i = el("input", { value: Array.isArray(v) ? v.join(", ") : v, "data-campo": `${prefijo}:${k}`, "aria-label": k });
+    return el("div", { clase: "campo-tax" }, el("label", { texto: k }), i);
+  });
+  if (!document.querySelector("#tax-extensiones .campo-tax") || estadoUI.taxRecargado !== T.original) {
+    document.getElementById("tax-extensiones").replaceChildren(...campos(T.original.extensiones, "ext"));
+    document.getElementById("tax-patrones").replaceChildren(...campos(T.original.patrones, "pat"));
+    estadoUI.taxRecargado = T.original;
+  }
+}
+
+function cambiosTaxonomia() {
+  const T = estadoUI.tax, o = T.original, cambios = {};
+  const orig = Object.fromEntries(o.taxonomia.map(c => [c.clave, c.ruta]));
+  const tax = {};
+  for (const c of T.categorias) {
+    if (c.quitar) tax[c.clave] = null;
+    else if (c.nueva || orig[c.clave] !== c.ruta) tax[c.clave] = c.ruta.trim();
+  }
+  if (Object.keys(tax).length) cambios.taxonomia = tax;
+  const ext = {}, pat = {};
+  document.querySelectorAll("[data-campo]").forEach(i => {
+    const [tipo, k] = i.dataset.campo.split(":");
+    if (tipo === "ext") {
+      const lista = i.value.split(",").map(x => x.trim().toLowerCase()).filter(Boolean);
+      if (lista.join(",") !== o.extensiones[k].join(",")) ext[k] = lista;
+    } else if (i.value !== o.patrones[k]) pat[k] = i.value;
+  });
+  if (Object.keys(ext).length) cambios.extensiones = ext;
+  if (Object.keys(pat).length) cambios.patrones = pat;
+  const reglas = T.reglas.map(r => ({ extensiones: r.extensiones, palabras: r.palabras, categoria: r.categoria }));
+  if (JSON.stringify(reglas) !== T.reglasIniciales) cambios.reglas_usuario = reglas;
+  return cambios;
+}
+
+function pintarVistaPrevia(r) {
+  document.getElementById("tax-resultado").replaceChildren(
+    el("p", { clase: "tenue", texto: `${r.revisados} archivos revisados · ${r.cambios.length} cambiarían de categoría.` }),
+    tabla([
+      { titulo: "Archivo", valor: f => el("td", { clase: "nombre" }, f.nombre, el("span", { clase: "ruta-sub", texto: f.ruta })) },
+      { titulo: "Antes", clase: "ruta", valor: f => f.antes || "—" },
+      { titulo: "Después", clase: "ruta", valor: f => f.despues || "—" },
+    ], r.cambios, "Ningún archivo conocido cambiaría de categoría (escanea primero si la lista está vacía)."));
+}
+
 // ---------------------------------------------------------------- Equipo (configuración inicial)
 async function pintarEquipo() {
   const r = await api("/api/equipo");
@@ -494,6 +570,29 @@ document.addEventListener("DOMContentLoaded", () => {
     catch (e) { avisar(e.message, true); }
   });
   document.getElementById("btn-detectar").addEventListener("click", () => lanzarTarea("/api/equipo/detectar", {}));
+  document.getElementById("btn-tax-agregar").addEventListener("click", () => {
+    const clave = document.getElementById("tax-nueva-clave").value.trim(), ruta = document.getElementById("tax-nueva-ruta").value.trim();
+    if (!clave || !ruta) { avisar("Escribe la clave y la carpeta de destino."); return; }
+    if (estadoUI.tax.categorias.some(c => c.clave === clave)) { avisar("Ya existe esa clave."); return; }
+    estadoUI.tax.categorias.push({ clave, ruta, en_uso: false, nueva: true, quitar: false });
+    pintarTaxonomia();
+  });
+  document.getElementById("btn-tax-regla").addEventListener("click", () => {
+    const extensiones = document.getElementById("tax-regla-ext").value.split(",").map(x => x.trim().toLowerCase()).filter(Boolean)
+      .map(x => x.startsWith(".") ? x : "." + x);
+    const categoria = document.getElementById("tax-regla-cat").value;
+    if (!extensiones.length || !categoria) { avisar("Indica al menos una extensión y la categoría."); return; }
+    estadoUI.tax.reglas.push({ extensiones, palabras: document.getElementById("tax-regla-palabras").value.trim(), categoria });
+    pintarTaxonomia();
+  });
+  document.getElementById("btn-tax-previa").addEventListener("click", () => lanzarTarea("/api/taxonomia/vista_previa", { cambios: cambiosTaxonomia() }));
+  document.getElementById("btn-tax-guardar").addEventListener("click", async () => {
+    const cambios = cambiosTaxonomia();
+    if (!Object.keys(cambios).length) { avisar("No hay cambios."); return; }
+    if (!(await confirmar("Guardar la taxonomía", "Se guardará en tu capa personal (con respaldo de la versión anterior). Vuelve a escanear para aplicarla.", "Guardar"))) return;
+    try { const r = await api("/api/taxonomia/guardar", { cambios }); avisar(r.aviso); pintarTaxonomia(true); }
+    catch (e) { avisar(e.message, true); }
+  });
   document.getElementById("btn-guardar-equipo").addEventListener("click", guardarEquipo);
   document.getElementById("btn-respaldar").addEventListener("click", async () => {
     try { const r = await api("/api/respaldos/crear", {}); avisar(r.respaldo ? "Respaldo creado." : "No hay configuración personal que respaldar."); pintarAjustes(); }

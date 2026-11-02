@@ -1,0 +1,39 @@
+{
+  "_comentario": "Taxonomía de destino en inglés. Se elige en la configuración inicial (config.json -> taxonomia = 'en') y se superpone a reglas.json; las reglas y palabras clave son las mismas.",
+  "taxonomia": {
+    "TFG": "University_Academic\\Final_Project",
+    "Ingles": "University_Academic\\Languages",
+    "Cursos": "University_Academic\\Courses_Assignments",
+    "Libros": "Digital_Library\\Books_and_Manuals",
+    "Certif": "Digital_Library\\IT_Certification_Guides",
+    "Articulos": "Digital_Library\\Academic_Papers",
+    "Notas": "Notes_Text_Drafts\\Text_Notes",
+    "Markdown": "Notes_Text_Drafts\\Markdown_Notes",
+    "Datos": "Notes_Text_Drafts\\Data_CSV_JSON_SQL",
+    "CV": "Personal_Documents\\Resume_CV",
+    "Ident": "Personal_Documents\\ID_and_Finance",
+    "Tramites": "Personal_Documents\\Paperwork_and_Letters",
+    "Videos": "Media\\Downloaded_Videos",
+    "Audio": "Media\\Audio",
+    "Imagenes": "Media\\Images_and_Screenshots",
+    "VidGrab": "Media\\Recordings",
+    "CursosTI": "Courses_and_Certifications",
+    "Instal": "Software_Installers",
+    "Scripts": "Code_Projects\\Loose_Scripts",
+    "Repos": "Code_Projects\\From_Downloads",
+    "Comprim": "Triage_To_Sort\\Unreviewed_Archives",
+    "Office": "Triage_To_Sort\\Unsorted_Office",
+    "PDF": "Triage_To_Sort\\Unsorted_PDF",
+    "Mensajes": "Triage_To_Sort\\Messaging_Folders",
+    "Carpetas": "Triage_To_Sort\\Folders_Unknown_Origin"
+  },
+  "archivos": {
+    "respaldo": "Triage_To_Sort\\By_Extension_{EXT}"
+  },
+  "analisis": {
+    "categorias_revisar": [
+      "Triage_To_Sort",
+      "Code_Projects\\From_Downloads"
+    ]
+  }
+}

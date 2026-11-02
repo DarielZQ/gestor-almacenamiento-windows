@@ -163,6 +163,7 @@ def crear_manejador(app: Aplicacion):
         "/api/config": lambda q: s.config_publica(),
         "/api/tarea": lambda q: {"tarea": app.tareas.actual},
         "/api/equipo": lambda q: s.equipo(),
+        "/api/taxonomia": lambda q: s.taxonomia(),
         "/api/respaldos": lambda q: {"respaldos": s.respaldos(), "carpeta": str(respaldo.dir_respaldos(s.cfg) or "")},
     }
     POST = {
@@ -177,6 +178,8 @@ def crear_manejador(app: Aplicacion):
         "/api/detener": lambda d: app.solicitar_parada(),
         "/api/equipo/detectar": lambda d: lanzar("deteccion", lambda p: s.detectar_equipo(p)),
         "/api/equipo/guardar": lambda d: s.guardar_equipo(d.get("elecciones") or {}),
+        "/api/taxonomia/vista_previa": lambda d: lanzar("vista_previa", lambda p: s.taxonomia_vista_previa(d.get("cambios") or {}, p)),
+        "/api/taxonomia/guardar": lambda d: s.taxonomia_guardar(d.get("cambios") or {}),
         "/api/reiniciar": lambda d: app.solicitar_reinicio(),
         "/api/respaldos/crear": lambda d: {"respaldo": s.respaldar_config("manual", forzar=True)},
         "/api/respaldos/restaurar": lambda d: s.restaurar_respaldo(str(d.get("nombre") or "")),
