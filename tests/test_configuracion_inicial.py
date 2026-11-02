@@ -76,11 +76,11 @@ def test_guardar_conserva_ajustes_manuales_y_crea_carpeta(tmp_path):
     ruta = tmp_path / "config.json"
     ruta.write_text(json.dumps({"puerto": 9001, "raiz_destino": "X:\\Ejemplo_viejo\\"}), encoding="utf-8")
     destino = tmp_path / "Destino nuevo"
-    ci.guardar({"raiz_destino": str(destino) + "\\", "modo": "completo"}, ruta)
+    ci.guardar({"raiz_destino": str(destino) + "\\", "modo": "completo"}, ruta, sobrescribir=True)
     datos = json.loads(ruta.read_text(encoding="utf-8"))
     assert datos["puerto"] == 9001 and datos["raiz_destino"] == str(destino) + "\\" and destino.is_dir()
     with pytest.raises(ErrorConfig, match="no existe"):
-        ci.guardar({"raiz_destino": str(tmp_path / "no" / "existe") + "\\"}, ruta)
+        ci.guardar({"raiz_destino": str(tmp_path / "no" / "existe") + "\\"}, ruta, sobrescribir=True)
 
 
 def test_flujo_completo_desde_el_servicio(equipo):
@@ -117,3 +117,28 @@ def test_usuario_con_espacios_y_tildes(tmp_path):
     filas = list(csv.DictReader(open(res["registro"], encoding="utf-8-sig")))
     d = m.deshacer(filas, ejecutar=True, dir_registro=str(tmp_path / "registro"))
     assert d["resultados"][0]["estado"] == "RESTAURADO" and origen.read_bytes() == b"contenido"
+
+
+def test_no_sobrescribe_sin_confirmar_y_muestra_diferencias(tmp_path):
+    ruta = tmp_path / "config.json"
+    destino = tmp_path / "destino"
+    destino.mkdir()
+    det = deteccion([disco("C", sistema=True), disco("E")], str(destino) + "\\", caches=["npm_cache"])
+    ci.guardar(ci.construir_config(det), ruta)
+    assert ci.diferencias(ci.construir_config(det), ruta) == {"existe": True, "ruta": str(ruta), "cambios": []}
+    otra = ci.construir_config(det, {"permitir_junctions": False, "taxonomia": "en"})
+    dif = ci.diferencias(otra, ruta)
+    claves = {c["clave"] for c in dif["cambios"]}
+    assert dif["existe"] and {"permitir_junctions", "taxonomia", "caches"} <= claves
+    with pytest.raises(ErrorConfig, match="confirma"):
+        ci.guardar(otra, ruta)
+    assert json.loads(ruta.read_text(encoding="utf-8"))["taxonomia"] == "es"     # no se tocó
+    ci.guardar(otra, ruta, sobrescribir=True)
+    assert json.loads(ruta.read_text(encoding="utf-8"))["taxonomia"] == "en"
+
+
+def test_destino_usb_se_puede_permitir_a_sabiendas():
+    det = deteccion([disco("C", sistema=True), disco("D", externo=True)], "D:\\", usb=True, junctions=False, caches=["npm_cache"])
+    assert ci.construir_config(det)["permitir_junctions"] is False
+    cfg = ci.construir_config(det, {"permitir_junctions": True, "caches_habilitadas": ["npm_cache"]})
+    assert cfg["permitir_junctions"] is True and cfg["caches"][0]["habilitada"] is True and cfg["destino_usb"] is True

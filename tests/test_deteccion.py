@@ -525,11 +525,12 @@ def test_catalogo_de_caches():
     assert len(CATALOGO_CACHES) >= 20
 
 
-def test_catalogo_ilegible_usa_el_interno(tmp_path):
+def test_catalogo_ilegible_da_un_aviso(tmp_path):
     roto = tmp_path / "catalogo.json"
     roto.write_text("{ roto", encoding="utf-8")
     catalogo, aviso = cargar_catalogo(roto)
-    assert "catálogo interno" in aviso and len(catalogo) == len(CATALOGO_CACHES)
+    assert catalogo == [] and "No se pudo leer" in aviso
+    assert len(CATALOGO_CACHES) >= 30   # el archivo del repositorio es la única fuente
     propio = tmp_path / "propio.json"
     propio.write_text(json.dumps({"cachés": [{"nombre": "npm_cache", "ruta": "%TEMP%\\otra", "segura": False}]}),
                       encoding="utf-8")

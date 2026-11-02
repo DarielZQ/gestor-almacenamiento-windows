@@ -556,13 +556,23 @@ class Servicio:
         return {"configurado": bool(self.cfg.get("raiz_destino")), "config": self.config_publica(),
                 "deteccion": self.db.ajuste("ultima_deteccion")}
 
-    def guardar_equipo(self, elecciones: dict) -> dict:
+    def diferencias_equipo(self, elecciones: dict) -> dict:
         det = self.db.ajuste("ultima_deteccion")
         if not det:
             raise ErrorGestor("Primero detecta el equipo.")
         try:
             nueva = configuracion_inicial.construir_config(det, elecciones)
-            ruta = configuracion_inicial.guardar(nueva, self.cfg.get("ruta_config_equipo"))
+        except ErrorConfig as e:
+            raise ErrorGestor(str(e)) from e
+        return configuracion_inicial.diferencias(nueva, self.cfg.get("ruta_config_equipo"))
+
+    def guardar_equipo(self, elecciones: dict, sobrescribir: bool = False) -> dict:
+        det = self.db.ajuste("ultima_deteccion")
+        if not det:
+            raise ErrorGestor("Primero detecta el equipo.")
+        try:
+            nueva = configuracion_inicial.construir_config(det, elecciones)
+            ruta = configuracion_inicial.guardar(nueva, self.cfg.get("ruta_config_equipo"), sobrescribir=sobrescribir)
             extra = {k: self.cfg[k] for k in ("dir_datos", "ruta_reglas", "ruta_motor") if self.cfg.get(k)}
             self.recargar(cargar_config(ruta, extra=extra))
         except (ErrorConfig, OSError) as e:

@@ -51,18 +51,10 @@ Con la app que usa la caché cerrada: `cmd /c rmdir "<ruta de la junction>"` (qu
 mueve la carpeta de `<raiz_destino>\Cache_Aplicaciones_Enlazadas\<Nombre>` a su ruta original.
 
 ## Estado exacto
-- `main`: etapa 1 (tag `etapa-1`, publicada) y la etapa 2 casi completa en commits separados: comprobación de
-  versión, configuración por capas y `-Config`, configuración inicial (web y consola), instalador, taxonomía editable
-  con vista previa y en inglés, perfiles y documentación.
-- La detección del equipo usa todavía `gestor\deteccion_provisional.py`. El módulo definitivo `gestor\deteccion`
-  se desarrolla en la rama `etapa2-deteccion` (worktree aparte) con la misma interfaz:
-  `detectar_equipo(fuentes=None) -> perfil` y `proponer_configuracion(perfil) -> propuesta`.
+- `main` con las etapas 1 (tag `etapa-1`, publicada) y 2 (tag `etapa-2`, sin publicar): comprobación de versión,
+  configuración por capas y `-Config`, módulo de detección `gestor\deteccion`, configuración inicial (web y consola),
+  instalador, taxonomía editable con vista previa y en inglés, perfiles y documentación.
 
 ## Siguiente paso recomendado
-1. `git merge etapa2-deteccion` en `main`. `gestor\configuracion_inicial.py` ya importa `gestor.deteccion` si
-   existe (si no, la versión provisional). Adaptar `construir_config`, `resumen_texto` y `pintarEquipo` (web) al formato
-   del perfil definitivo si difiere (claves usadas: `perfil.discos[].{letra, raiz, tipo, externo, es_sistema, ntfs,
-   sistema_archivos, libre, total, etiqueta}`, `perfil.carpetas.raiz_sistema`, `perfil.nube[].{servicio, ruta}`,
-   `perfil.bibliotecas[].{plataforma, ruta}`, `perfil.caches[]`, `perfil.avisos_carpetas`, `propuesta.{raiz_destino,
-   modo, permitir_junctions, destino_usb, advertencias, intocables_detectados, caches}`).
-2. Borrar `gestor\deteccion_provisional.py`, pasar auditoría y pruebas, `git worktree remove` y tag `etapa-2`.
+1. Publicar `etapa-2` tras auditar.
+2. Tareas 4 en adelante de `PROJECT_STATUS.md` (editar destino antes de aprobar, deshacer junctions...).

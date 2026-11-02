@@ -104,3 +104,9 @@
 - Los perfiles exportados no llevan datos personales ni del equipo salvo que se marque; importar respalda antes.
 - `instalar.ps1` no instala Python: si falta, explica cómo hacerlo. Es idempotente.
 - Alcance: solo Windows (PowerShell, NTFS y junctions).
+
+## 2026-11-02 — Módulo de detección
+- `gestor\deteccion` es un paquete con detectores por sección (discos, nube, carpetas, bibliotecas, rutas
+  referenciadas, cachés), cada uno con su presupuesto de tiempo; si uno falla o se pasa de tiempo, su sección queda
+  vacía y el motivo va a las advertencias. `proponer_configuracion` devuelve en `config` exactamente lo que va a
+  `config.json`, y la interfaz y la consola solo permiten cambiar destino, taxonomía, junctions y cachés.

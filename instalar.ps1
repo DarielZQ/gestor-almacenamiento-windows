@@ -104,6 +104,7 @@ if (-not $SinConfiguracion) {
     if ($hacer) {
         $argsCI = @('-m', 'gestor.configuracion_inicial', '--salida', $config)
         if ($Desatendido) { $argsCI += '--si' }
+        if (Test-Path -LiteralPath $config) { $argsCI += '--sobrescribir' }   # ya confirmado arriba
         Push-Location $raiz
         try { & $venvPython @argsCI } finally { Pop-Location }
         if ($LASTEXITCODE -gt 1) { throw 'La configuración inicial no terminó bien.' }

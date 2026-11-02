@@ -460,20 +460,22 @@ async function pintarEquipo() {
   if (!det) return;
   const p = det.propuesta, perfil = det.perfil;
   document.getElementById("equipo-advertencias").replaceChildren(
-    ...p.advertencias.concat(perfil.avisos_carpetas || []).map(a => el("div", { clase: "aviso", texto: a })));
+    ...(p.advertencias || []).map(a => el("div", { clase: "aviso", texto: a })));
   const elegido = estadoUI.destinoElegido || (r.configurado ? c.raiz_destino : p.raiz_destino);
   document.getElementById("tabla-discos").replaceChildren(tabla([
     { titulo: "", valor: d => { const x = el("input", { type: "radio", name: "destino", value: d.raiz, "aria-label": d.raiz });
         x.checked = elegido.toLowerCase().startsWith(d.raiz.toLowerCase()); x.disabled = d.es_sistema && perfil.discos.length > 1;
         x.addEventListener("change", () => { estadoUI.destinoElegido = d.raiz; }); return x; } },
     { titulo: "Disco", valor: d => `${d.raiz}${d.etiqueta ? " (" + d.etiqueta + ")" : ""}` },
-    { titulo: "Tipo", valor: d => `${d.tipo}${d.es_sistema ? " · sistema" : ""}` },
+    { titulo: "Tipo", valor: d => `${{ usb: "USB", extraible: "extraíble", interno: "interno", virtual: "virtual", red: "red" }[d.tipo] || d.tipo}${d.es_sistema ? " · sistema" : ""}` },
     { titulo: "Sistema de archivos", valor: d => d.sistema_archivos || "—" },
     { titulo: "Libre", num: true, valor: d => tamano(d.libre) },
     { titulo: "Total", num: true, valor: d => tamano(d.total) },
   ], perfil.discos, "No se detectaron discos."));
   document.getElementById("equipo-taxonomia").value = (r.configurado && c.taxonomia) || "es";
   document.getElementById("equipo-junctions").checked = r.configurado ? !!c.permitir_junctions : !!p.permitir_junctions;
+  document.getElementById("equipo-junctions").title = p.destino_usb
+    ? "Destino USB: si el disco se desconecta, las carpetas enlazadas dejan de funcionar. Márcala solo si siempre está conectado." : "";
   const lista = (titulo, filas) => el("div", {}, el("strong", { texto: titulo }),
     filas.length ? el("ul", {}, filas.map(x => el("li", { texto: x }))) : el("p", { clase: "tenue", texto: "Ninguna." }));
   const refs = det.referencias && !det.referencias.error ? Object.entries(det.referencias).map(([k, v]) => `${k}: ${v}`) : [];
@@ -491,7 +493,7 @@ async function pintarEquipo() {
     { titulo: "Tamaño", num: true, valor: x => tamano(x.bytes) },
     { titulo: "Reubicable", valor: x => x.ya_enlazada ? "ya enlazada" : (x.segura ? "sí" : "no recomendada") },
     { titulo: "Nota", valor: x => x.nota || "" },
-  ], perfil.caches, "No se encontraron cachés del catálogo."));
+  ], perfil.caches.filter(x => x.existe !== false), "No se encontraron cachés del catálogo."));
 }
 
 async function guardarEquipo() {
@@ -503,10 +505,17 @@ async function guardarEquipo() {
     permitir_junctions: document.getElementById("equipo-junctions").checked,
     caches_habilitadas: [...document.querySelectorAll("input[data-cache]")].filter(x => x.checked).map(x => x.dataset.cache),
   };
-  if (!(await confirmar("Guardar la configuración del equipo",
-    `Destino: ${elecciones.raiz_destino || "el propuesto"}. Se guardará config\\config.json (con respaldo de la versión anterior). No se mueve nada.`, "Guardar"))) return;
+  let dif;
+  try { dif = await api("/api/equipo/diferencias", { elecciones }); } catch (e) { avisar(e.message, true); return; }
+  if (dif.existe && !dif.cambios.length) { avisar("La configuración actual ya coincide: no hay nada que cambiar."); return; }
+  const texto = dif.existe
+    ? "Ya hay una configuración del equipo. Cambiaría:\n" + dif.cambios.map(c => `• ${c.clave}: ${c.antes ?? "—"} → ${c.despues ?? "—"}`).join("\n") +
+      "\n\nSe guarda antes una copia de la configuración actual. No se mueve nada."
+    : `Destino: ${elecciones.raiz_destino || "el propuesto"}. Se creará config.json. No se mueve nada.`;
+  if (!(await confirmar(dif.existe ? "Reemplazar la configuración del equipo" : "Guardar la configuración del equipo", texto,
+    dif.existe ? "Reemplazar" : "Guardar"))) return;
   try {
-    await api("/api/equipo/guardar", { elecciones });
+    await api("/api/equipo/guardar", { elecciones, sobrescribir: dif.existe });
     estadoUI.destinoElegido = null;
     avisar("Configuración guardada. Ya puedes escanear.");
     refrescar();

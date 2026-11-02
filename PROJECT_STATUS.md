@@ -46,13 +46,15 @@ Versión 0.1.0 — 2026-11-01. Primera versión funcional y probada.
 - No hay inspección del contenido de documentos para clasificar (el usuario lo autorizó; ver próximas tareas).
 
 ## Pendiente (por prioridad)
-1. **Etapa 2: portabilidad a cualquier Windows 10/11.** Hecho: comprobación de versión; configuración por capas con
+1. **Etapa 2: portabilidad a cualquier Windows 10/11.** Terminada (tag `etapa-2`). Hecho: comprobación de versión; configuración por capas con
    esquema; motor con `-Config` y sin destino fijo; protección por detección (servicios, marcadores de bibliotecas,
    `intocables_detectados`); catálogo genérico de cachés; configuración inicial en la interfaz (pestaña Equipo,
-   también "volver a detectar") y por consola (`python -m gestor.configuracion_inicial`), hoy sobre una detección
-   provisional (`gestor\deteccion_provisional.py`) que se sustituirá por el módulo `gestor\deteccion` definitivo.
+   también "volver a detectar") y por consola (`python -m gestor.configuracion_inicial`), sobre el módulo de detección
+   `gestor\deteccion` (fuentes inyectables; depuración con `python -m gestor.deteccion`).
    Hechos también: instalador (`instalar.ps1`/`.bat`), taxonomía editable con vista previa y en inglés,
-   perfiles exportables y `docs\ADAPTAR-A-TU-EQUIPO.md`. Diseño original de la etapa:
+   perfiles exportables y `docs\ADAPTAR-A-TU-EQUIPO.md`. La configuración inicial nunca reemplaza un `config.json`
+   existente sin mostrar las diferencias y pedir confirmación; con destino USB, las junctions se pueden activar a
+   sabiendas. El catálogo de cachés tiene una sola fuente (`config\catalogo_caches.json`). Diseño original de la etapa:
    - Configuración por capas: `config.example.json` sin destino fijo (`raiz_destino: null`) → `config.json` del equipo
      (generado por la configuración inicial, validado con esquema y mensajes claros) → `reglas.local.json`.
    - Motor con `-Config <ruta>`: destino, `dir_registro`, `intocables_detectados` (nube, bibliotecas de juegos,

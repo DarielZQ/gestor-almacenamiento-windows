@@ -15,10 +15,7 @@ from pathlib import Path
 
 from .config import CONFIG_EQUIPO, ErrorConfig, escribir_json, leer_json, validar
 
-try:  # módulo de detección definitivo
-    from .deteccion import detectar_equipo as _detectar_equipo, proponer_configuracion as _proponer_configuracion
-except ImportError:  # mientras tanto, la versión provisional con la misma interfaz
-    from .deteccion_provisional import detectar_equipo as _detectar_equipo, proponer_configuracion as _proponer_configuracion
+from .deteccion import detectar_equipo as _detectar_equipo, proponer_configuracion as _proponer_configuracion
 
 CLAVES_GENERADAS = ("raiz_destino", "dir_registro", "modo", "taxonomia", "permitir_junctions", "destino_usb",
                     "intocables_detectados", "caches", "discos")
@@ -49,9 +46,10 @@ def construir_config(deteccion: dict, elecciones: dict | None = None) -> dict:
     if raiz and not raiz.endswith("\\"):
         raiz += "\\"
     disco = next((d for d in perfil["discos"] if d["raiz"].lower() == raiz[:3].lower()), None)
-    es_sistema = bool(disco and disco["es_sistema"]) or (not disco and raiz[:2].upper() == perfil["carpetas"]["raiz_sistema"][:2].upper())
-    externo = bool(disco and disco["externo"])
-    ntfs = disco["ntfs"] if disco else True
+    origen = prop.get("origen") or (perfil.get("carpetas") or {}).get("raiz_sistema") or "C:\\"
+    es_sistema = bool(disco and disco.get("es_sistema")) or (not disco and raiz[:2].upper() == origen[:2].upper())
+    externo = bool(disco and disco.get("externo"))
+    ntfs = bool(disco.get("ntfs")) if disco else True
     permitir = bool(e.get("permitir_junctions", prop["permitir_junctions"] if raiz == prop["raiz_destino"] else (not externo and ntfs)))
     if not ntfs:
         permitir = False
@@ -79,15 +77,47 @@ def construir_config(deteccion: dict, elecciones: dict | None = None) -> dict:
     return cfg
 
 
-def guardar(nueva: dict, ruta: Path | str | None = None, crear_destino: bool = True) -> Path:
-    """Escribe config.json conservando los ajustes que el usuario haya puesto a mano (puerto, umbrales...)."""
-    ruta = Path(ruta or os.environ.get("GESTOR_CONFIG") or CONFIG_EQUIPO)
+def ruta_config(ruta: Path | str | None = None) -> Path:
+    return Path(ruta or os.environ.get("GESTOR_CONFIG") or CONFIG_EQUIPO)
+
+
+def _resumir(clave: str, valor):
+    if clave == "caches" and isinstance(valor, list):
+        activas = [c.get("nombre") for c in valor if c.get("habilitada")]
+        return f"{len(valor)} cachés, habilitadas: {', '.join(activas) or 'ninguna'}"
+    if clave == "intocables_detectados" and isinstance(valor, list):
+        return f"{len(valor)} rutas protegidas"
+    if clave == "discos" and isinstance(valor, list):
+        return ", ".join(f"{d.get('letra')}: {d.get('tipo')}" for d in valor)
+    return valor
+
+
+def diferencias(nueva: dict, ruta: Path | str | None = None) -> dict:
+    """Qué cambiaría en config.json: lista de {clave, antes, despues} (resumidos para listas largas)."""
+    ruta = ruta_config(ruta)
+    try:
+        actual = leer_json(ruta) if ruta.exists() else {}
+    except ValueError:
+        actual = {}
+    cambios = []
+    for clave in CLAVES_GENERADAS:
+        if actual.get(clave) != nueva.get(clave):
+            cambios.append({"clave": clave, "antes": _resumir(clave, actual.get(clave)), "despues": _resumir(clave, nueva.get(clave))})
+    return {"existe": bool(actual.get("raiz_destino")), "ruta": str(ruta), "cambios": cambios}
+
+
+def guardar(nueva: dict, ruta: Path | str | None = None, crear_destino: bool = True, sobrescribir: bool = False) -> Path:
+    """Escribe config.json conservando los ajustes que el usuario haya puesto a mano (puerto, umbrales...).
+    Nunca reemplaza una configuración existente sin 'sobrescribir' (confirmación explícita tras ver las diferencias)."""
+    ruta = ruta_config(ruta)
     previa = {}
     if ruta.exists():
         try:
             previa = leer_json(ruta)
         except ValueError:
             previa = {}
+    if previa.get("raiz_destino") and not sobrescribir and diferencias(nueva, ruta)["cambios"]:
+        raise ErrorConfig("Ya hay una configuración del equipo: revisa los cambios y confirma para reemplazarla.")
     datos = {k: v for k, v in previa.items() if k not in CLAVES_GENERADAS}
     datos.update(nueva)
     raiz = Path(datos["raiz_destino"])
@@ -115,10 +145,9 @@ def resumen_texto(det: dict) -> str:
     l += [f"  ! {a}" for a in p["advertencias"]]
     l.append(f"Nube (intocable): {', '.join(n['servicio'] + ' ' + n['ruta'] for n in perfil['nube']) or 'ninguna'}")
     l.append(f"Bibliotecas de juegos (intocables): {', '.join(b['plataforma'] + ' ' + b['ruta'] for b in perfil['bibliotecas']) or 'ninguna'}")
-    l += [f"  ! {a}" for a in perfil.get("avisos_carpetas", [])]
     l.append("Cachés encontradas:")
     propuestas = {c["nombre"]: c["habilitada"] for c in p["caches"]}
-    for c in perfil["caches"]:
+    for c in [c for c in perfil["caches"] if c.get("existe") is not False]:
         l.append(f"  [{'x' if propuestas.get(c['nombre']) else ' '}] {c['nombre']:<20} {_gb(c.get('bytes')):>8}  "
                  f"{'segura' if c.get('segura') else 'no recomendada'}{'  (ya enlazada)' if c.get('ya_enlazada') else ''}")
     if det.get("referencias"):
@@ -130,6 +159,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="gestor.configuracion_inicial", description="Configuración inicial del gestor")
     ap.add_argument("--si", action="store_true", help="aceptar la propuesta sin preguntar")
     ap.add_argument("--salida", default=None, help="ruta de config.json (por defecto config/config.json)")
+    ap.add_argument("--sobrescribir", action="store_true", help="con --si, reemplazar una configuración existente")
     args = ap.parse_args(argv)
 
     print("Detectando el equipo (solo lectura)...")
@@ -149,10 +179,21 @@ def main(argv=None) -> int:
                 elecciones["permitir_junctions"] = j == "s"
     try:
         cfg = construir_config(det, elecciones)
+        dif = diferencias(cfg, args.salida)
+        if dif["existe"]:
+            if not dif["cambios"]:
+                print("La configuración actual ya coincide con esta: no hay nada que cambiar.")
+                return 0
+            print(f"\nYa hay una configuración en {dif['ruta']}. Cambiaría:")
+            for c in dif["cambios"]:
+                print(f"  {c['clave']}: {c['antes']}  ->  {c['despues']}")
+            if args.si and not args.sobrescribir:
+                print("No se reemplaza sin confirmación (usa --sobrescribir o ejecútalo sin --si).")
+                return 1
         if not args.si and input("\n¿Guardar esta configuración? [s/N]: ").strip().lower() != "s":
             print("No se guardó nada.")
             return 1
-        ruta = guardar(cfg, args.salida)
+        ruta = guardar(cfg, args.salida, sobrescribir=True)
     except ErrorConfig as e:
         print(f"No se pudo guardar: {e}")
         return 2
