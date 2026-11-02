@@ -32,10 +32,8 @@ Versión 0.1.0 — 2026-11-01. Primera versión funcional y probada.
   acceso directo.
 
 ## Estado de GitHub
-- Tag local `etapa-1`: primera versión lista para publicar (un único commit).
-- Nombre previsto: `gestor-almacenamiento-windows`, privado y sin licencia por ahora.
-- Repositorio local con historial limpio (identidad configurada solo en el repo). Sin remoto y sin push:
-  el propietario lo revisará y lo subirá.
+- Repositorio público `gestor-almacenamiento-windows`, con licencia MIT (`LICENSE`).
+- Tags `etapa-1` y `etapa-2` publicados. Identidad configurada solo en el repo; auditoría de privacidad en cada commit.
 
 ## Problemas conocidos
 - La primera llamada al motor por escaneo tarda 2–15 s (arranque de PowerShell y lectura de accesos directos).
@@ -73,11 +71,10 @@ Versión 0.1.0 — 2026-11-01. Primera versión funcional y probada.
    - Perfiles: exportar/importar sin datos del equipo salvo que se marque; botón "volver a detectar equipo".
    - Pruebas de portabilidad con detectores simulados (sin D:, destino E:, USB, un disco, sin nube, Steam en otra
      biblioteca, perfil con espacios y tildes) y `docs\ADAPTAR-A-TU-EQUIPO.md`. Alcance: solo Windows.
-2. Publicado: el tag `etapa-1` está en el repositorio privado `gestor-almacenamiento-windows`.
+2. Publicado: `etapa-1` y `etapa-2` están en el repositorio público `gestor-almacenamiento-windows`.
 4. Permitir elegir o editar el destino de un elemento antes de aprobarlo (con validación de raíz).
 5. Deshacer junctions (`ENLAZADO`): quitar la junction y devolver la carpeta, con las mismas garantías.
 6. Clasificación opcional por contenido (texto de PDF/DOCX) para lo que cae en triage, sin guardar contenido.
 7. Historial: filtros por fecha y estado, exportación y paginación; "abrir carpeta" en duplicados (nunca borrar).
 8. Medición más rápida de carpetas enormes (caché por carpeta y fecha, en segundo plano).
-9. Agregar LICENSE MIT al hacerlo público.
-10. Capturas con datos de prueba al hacerlo público (hoy el README es solo texto).
+9. Capturas con datos de prueba al hacerlo público (hoy el README es solo texto).
