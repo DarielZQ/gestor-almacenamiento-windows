@@ -51,13 +51,18 @@ Con la app que usa la caché cerrada: `cmd /c rmdir "<ruta de la junction>"` (qu
 mueve la carpeta de `<raiz_destino>\Cache_Aplicaciones_Enlazadas\<Nombre>` a su ruta original.
 
 ## Estado exacto
-- Rama `main` con un único commit, marcado con el tag local `etapa-1`. Sin remoto. Árbol limpio y auditoría limpia.
-- Etapa 2 en curso (ver `PROJECT_STATUS.md`, punto 1): hechos la comprobación de versión y la configuración por capas
-  con `-Config`; siguen los detectores, la configuración inicial y el instalador.
+- `main`: etapa 1 (tag `etapa-1`, publicada) y la etapa 2 casi completa en commits separados: comprobación de
+  versión, configuración por capas y `-Config`, configuración inicial (web y consola), instalador, taxonomía editable
+  con vista previa y en inglés, perfiles y documentación.
+- La detección del equipo usa todavía `gestor\deteccion_provisional.py`. El módulo definitivo `gestor\deteccion`
+  se desarrolla en la rama `etapa2-deteccion` (worktree aparte) con la misma interfaz:
+  `detectar_equipo(fuentes=None) -> perfil` y `proponer_configuracion(perfil) -> propuesta`.
 
 ## Siguiente paso recomendado
-1. Publicar `etapa-1` (punto 2 de `PROJECT_STATUS.md`).
-2. Comprobación de versión entre interfaz y servidor (punto 3): `__version__` en `gestor\__init__.py`, `/salud`,
-   `web\conexion.js` (comparar al conectar) e `iniciar.ps1` (si la versión de `/salud` no coincide con la del código,
-   detener con `detener.ps1` y arrancar de nuevo).
-3. Etapa 2 en commits separados, empezando por la configuración por capas y `-Config` del motor, con pruebas.
+1. `git merge etapa2-deteccion` en `main`. `gestor\configuracion_inicial.py` ya importa `gestor.deteccion` si
+   existe (si no, la versión provisional). Adaptar `construir_config`, `resumen_texto` y `pintarEquipo` (web) al formato
+   del perfil definitivo si difiere (claves usadas: `perfil.discos[].{letra, raiz, tipo, externo, es_sistema, ntfs,
+   sistema_archivos, libre, total, etiqueta}`, `perfil.carpetas.raiz_sistema`, `perfil.nube[].{servicio, ruta}`,
+   `perfil.bibliotecas[].{plataforma, ruta}`, `perfil.caches[]`, `perfil.avisos_carpetas`, `propuesta.{raiz_destino,
+   modo, permitir_junctions, destino_usb, advertencias, intocables_detectados, caches}`).
+2. Borrar `gestor\deteccion_provisional.py`, pasar auditoría y pruebas, `git worktree remove` y tag `etapa-2`.
