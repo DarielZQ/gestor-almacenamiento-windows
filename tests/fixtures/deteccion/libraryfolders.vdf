@@ -1,0 +1,25 @@
+"libraryfolders"
+{
+	"0"
+	{
+		"path"		"C:\\Program Files (x86)\\Steam"
+		"label"		""
+		"totalsize"		"0"
+		"apps"
+		{
+			"100"		"1048576"
+		}
+	}
+	// biblioteca en otra unidad
+	"1"
+	{
+		"path"		"E:\\EjemploSteamLibrary"
+		"label"		"Biblioteca de ejemplo"
+		"totalsize"		"1000000000000"
+		"apps"
+		{
+			"200"		"2097152"
+			"300"		"4194304"
+		}
+	}
+}

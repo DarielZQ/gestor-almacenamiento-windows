@@ -1,0 +1,4 @@
+{
+  "personal": {"path": "{PERFIL}\\Dropbox", "host": 1, "is_team": false, "subscription_type": "Basic"},
+  "business": {"path": "{PERFIL}\\Dropbox (Empresa Ejemplo)", "host": 2, "is_team": true, "subscription_type": "Business"}
+}

@@ -1,0 +1,21 @@
+{
+	"FormatVersion": 0,
+	"bIsIncompleteInstall": false,
+	"LaunchCommand": "",
+	"LaunchExecutable": "Binarios/JuegoEjemplo.exe",
+	"ManifestLocation": "C:\\ProgramData/Epic/EpicGamesLauncher/Data/Manifests",
+	"bIsApplication": true,
+	"bIsExecutable": true,
+	"bIsManaged": false,
+	"bNeedsValidation": false,
+	"bRequiresAuth": true,
+	"bCanRunOffline": true,
+	"DisplayName": "Juego Ejemplo",
+	"InstallationGuid": "A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6",
+	"InstallLocation": "E:\\Ejemplo Epic\\JuegoEjemplo",
+	"InstallSize": 1048576,
+	"CatalogNamespace": "espacioejemplo",
+	"CatalogItemId": "elementoejemplo",
+	"AppName": "AppEjemplo",
+	"AppVersionString": "1.0.0"
+}
