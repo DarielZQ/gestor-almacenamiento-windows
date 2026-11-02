@@ -1,0 +1,3 @@
+#!/bin/sh
+# Auditoría de privacidad antes de cada commit. Se activa con: git config core.hooksPath .githooks
+exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File "scripts/auditar-privacidad.ps1" -Preparado -SinHistorial

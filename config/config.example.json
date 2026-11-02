@@ -1,0 +1,23 @@
+{
+  "puerto": 8742,
+  "raiz_destino": "D:\\",
+  "dir_registro": null,
+  "horas_recientes": 2,
+  "umbral_grande_mb": 500,
+  "vigilancia_minutos": 10,
+  "presupuesto_segundos_carpeta": 20,
+  "presupuesto_segundos_zona": 180,
+  "duplicados": {
+    "min_mb": 1,
+    "hash_completo": true,
+    "presupuesto_segundos": 300,
+    "raices_extra": []
+  },
+  "rutas": {
+    "perfil": null,
+    "descargas": null,
+    "escritorio": null,
+    "documentos": null,
+    "raiz_sistema": null
+  }
+}

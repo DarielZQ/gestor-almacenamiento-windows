@@ -1,0 +1,2 @@
+# Dependencias para las pruebas (versiones fijadas)
+pytest==8.3.3

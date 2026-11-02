@@ -1,0 +1,38 @@
+{
+  "_comentario": "Copia este archivo como reglas.local.json para añadir reglas propias del equipo sin versionarlas. Se fusiona encima de reglas.json: los objetos se combinan clave a clave y las listas o textos se reemplazan completos.",
+  "patrones": {
+    "tfg": "(?i)tfg|<palabra-de-tu-proyecto>|bit[aá]cora|avance|minuta|convenio|consentimiento|patrocinador|declaraci[oó]n|entrega|informe de (cierre|pruebas)|acuerdos"
+  },
+  "carpetas_usuario": {
+    "excluir": [
+      "netbeans-*-bin",
+      "ffmpeg-*",
+      "<Carpeta que usa una app>",
+      ".vs"
+    ]
+  },
+  "intocables": {
+    "proyectos_usuario": [
+      "<ProyectoA>",
+      "<ProyectoB>"
+    ],
+    "rutas_extra": [
+      "%LOCALAPPDATA%\\<CarpetaDeDatosDeUnaApp>"
+    ]
+  },
+  "enlaces_app": {
+    "lista": [
+      {
+        "nombre": "<App>",
+        "base": "%LOCALAPPDATA%\\<CarpetaDeLaApp>",
+        "subcarpeta": "<patron_*>",
+        "carpeta": "<carpeta_pesada>",
+        "procesos": [
+          "<proceso>"
+        ],
+        "destino": "<App>_carpeta",
+        "habilitada": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="gestor-token" content="__TOKEN__">
+  <title>Gestor de almacenamiento</title>
+  <link rel="stylesheet" href="/web/estilos.css">
+  <script src="/web/conexion.js" defer></script>
+  <script src="/web/app.js" defer></script>
+</head>
+<body>
+  <header class="cabecera">
+    <div class="marca">
+      <h1>Gestor de almacenamiento</h1>
+      <p class="sub">Libera C: moviendo a D: solo lo que tú apruebes. Nunca se borra nada.</p>
+    </div>
+    <div id="tarea" class="tarea oculto" role="status" aria-live="polite">
+      <span class="giro" aria-hidden="true"></span><span id="tarea-texto"></span>
+    </div>
+  </header>
+
+  <div id="sin-servidor" class="sin-servidor oculto" role="alert">
+    El servidor local no está corriendo. Ábrelo con el acceso directo <strong>Gestor de Almacenamiento</strong>.
+    <span class="tenue">Se reconectará solo en cuanto vuelva.</span>
+  </div>
+
+  <nav class="pestanas" role="tablist">
+    <button role="tab" data-pestana="resumen" class="activa">Resumen</button>
+    <button role="tab" data-pestana="elementos">Elementos</button>
+    <button role="tab" data-pestana="cola">Cola de nuevos <span id="n-cola" class="contador"></span></button>
+    <button role="tab" data-pestana="ejecutar">Ejecutar <span id="n-aprobados" class="contador"></span></button>
+    <button role="tab" data-pestana="historial">Historial</button>
+    <button role="tab" data-pestana="duplicados">Duplicados</button>
+    <button role="tab" data-pestana="ajustes">Ajustes</button>
+  </nav>
+
+  <main>
+    <!-- Resumen -->
+    <section id="p-resumen" class="panel">
+      <div class="fila-acciones">
+        <button id="btn-escanear" class="primario">Escaneo completo</button>
+        <button id="btn-escanear-rapido">Escaneo rápido (Descargas y Escritorio)</button>
+        <span id="ultimo-escaneo" class="tenue"></span>
+      </div>
+      <div id="discos" class="discos"></div>
+      <div id="kpis" class="kpis"></div>
+      <h2>Dónde está el espacio</h2>
+      <p class="tenue">Carpetas medidas en el último escaneo completo. Las de sistema e intocables no se recorren.</p>
+      <div id="analisis"></div>
+    </section>
+
+    <!-- Elementos -->
+    <section id="p-elementos" class="panel oculto">
+      <div class="filtros">
+        <label>Clasificación
+          <select id="f-clasificacion">
+            <option value="">Todas</option><option>Migrable</option><option>Revisar</option><option>Intocable</option>
+          </select>
+        </label>
+        <label>Estado
+          <select id="f-estado">
+            <option value="">Todos</option><option>pendiente</option><option>aprobado</option><option>rechazado</option>
+            <option>ejecutado</option><option>error</option>
+          </select>
+        </label>
+        <label>Zona
+          <select id="f-zona">
+            <option value="">Todas</option><option value="descargas">Descargas</option><option value="escritorio">Escritorio</option>
+            <option value="grandes">Archivos grandes</option><option value="caches">Cachés</option><option value="raiz_destino">Raíz de D:</option>
+          </select>
+        </label>
+        <label>Orden
+          <select id="f-orden">
+            <option value="bytes">Tamaño</option><option value="libera">Libera en C:</option><option value="nombre">Nombre</option>
+            <option value="detectado">Detección</option>
+          </select>
+        </label>
+        <label class="crece">Buscar <input id="f-q" type="search" placeholder="ruta, destino o categoría"></label>
+      </div>
+      <div class="barra-lote">
+        <span id="resumen-elementos" class="tenue"></span>
+        <span class="separador"></span>
+        <button data-lote="aprobar" class="primario">Aprobar selección</button>
+        <button data-lote="rechazar">Rechazar selección</button>
+        <button data-lote="pendiente">Volver a pendiente</button>
+      </div>
+      <div id="tabla-elementos" class="tabla-contenedor"></div>
+      <button id="mas-elementos" class="oculto">Cargar más</button>
+    </section>
+
+    <!-- Cola -->
+    <section id="p-cola" class="panel oculto">
+      <p class="tenue">Archivos y carpetas nuevos detectados en Descargas y Escritorio desde el escaneo anterior. La app vuelve a mirar cada <span id="min-vigilancia">?</span> min mientras está abierta.</p>
+      <div class="barra-lote">
+        <button id="btn-cola-rapido">Buscar nuevos ahora</button>
+        <span class="separador"></span>
+        <button data-lote-cola="aprobar" class="primario">Aprobar selección</button>
+        <button data-lote-cola="rechazar">Rechazar selección</button>
+        <button data-lote-cola="vistos">Marcar como vistos</button>
+      </div>
+      <div id="tabla-cola" class="tabla-contenedor"></div>
+    </section>
+
+    <!-- Ejecutar -->
+    <section id="p-ejecutar" class="panel oculto">
+      <div class="aviso">
+        <strong>Antes de mover:</strong> se revalida cada elemento (el origen existe y no cambió, el destino no existe, no es intocable).
+        El motor vuelve a comprobarlo, nunca sobrescribe y registra todo en un CSV que permite deshacer.
+      </div>
+      <div class="fila-acciones">
+        <button id="btn-simular">Simular (validar sin mover)</button>
+        <button id="btn-ejecutar" class="peligro">Ejecutar aprobados</button>
+        <span id="resumen-aprobados" class="tenue"></span>
+      </div>
+      <div id="tabla-aprobados" class="tabla-contenedor"></div>
+      <h2>Resultado de la última ejecución</h2>
+      <div id="resultado-ejecucion" class="tabla-contenedor"></div>
+    </section>
+
+    <!-- Historial -->
+    <section id="p-historial" class="panel oculto">
+      <div class="filtros">
+        <label class="crece">Buscar <input id="h-q" type="search" placeholder="origen, destino o categoría"></label>
+        <label>Estado
+          <select id="h-estado">
+            <option value="">Todos</option><option>MOVIDO</option><option>RESTAURADO</option><option>ENLAZADO</option>
+            <option>OMITIDO</option><option>ERROR</option><option>VERIFICAR</option>
+          </select>
+        </label>
+        <button id="btn-importar">Releer registros CSV</button>
+      </div>
+      <p id="resumen-historial" class="tenue"></p>
+      <div id="tabla-historial" class="tabla-contenedor"></div>
+      <h2>Decisiones</h2>
+      <div id="tabla-decisiones" class="tabla-contenedor"></div>
+    </section>
+
+    <!-- Duplicados -->
+    <section id="p-duplicados" class="panel oculto">
+      <div class="aviso">Solo informativo: el gestor nunca elimina archivos. Compara tamaño, luego un hash parcial y después el hash completo.</div>
+      <div class="fila-acciones">
+        <button id="btn-duplicados" class="primario">Buscar duplicados</button>
+        <span id="resumen-duplicados" class="tenue"></span>
+      </div>
+      <div id="lista-duplicados"></div>
+    </section>
+
+    <!-- Ajustes -->
+    <section id="p-ajustes" class="panel oculto">
+      <p class="tenue">Para cambiar estos valores edita <code>config\config.json</code> (copia de <code>config.example.json</code>) y reinicia. Las reglas de clasificación están en <code>config\reglas.json</code> y <code>config\reglas.local.json</code>.</p>
+      <pre id="config"></pre>
+      <h2>Respaldos de la configuración personal</h2>
+      <p class="tenue">Copias automáticas de <code>config.json</code> y <code>reglas.local.json</code> cada vez que cambian (se guardan las últimas 20 junto al registro de movimientos). Restaurar una copia guarda antes la configuración actual.</p>
+      <div class="fila-acciones"><button id="btn-respaldar">Respaldar ahora</button><span id="dir-respaldos" class="tenue"></span></div>
+      <div id="tabla-respaldos" class="tabla-contenedor"></div>
+      <h2>Servidor</h2>
+      <div class="fila-acciones">
+        <button id="btn-detener" class="peligro">Detener servidor</button>
+        <span class="tenue">Para volver a abrirlo, usa el acceso directo del Escritorio o <code>iniciar.ps1</code>.</span>
+      </div>
+    </section>
+  </main>
+
+  <div id="aviso-flotante" class="flotante oculto" role="alert"></div>
+
+  <dialog id="dialogo">
+    <form method="dialog">
+      <h3 id="dialogo-titulo"></h3>
+      <p id="dialogo-texto"></p>
+      <div class="fila-acciones derecha">
+        <button value="no">Cancelar</button>
+        <button value="si" id="dialogo-si" class="peligro">Confirmar</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

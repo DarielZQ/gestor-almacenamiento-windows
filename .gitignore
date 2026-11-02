@@ -1,0 +1,35 @@
+# Datos reales del equipo: nunca al repositorio
+datos/
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+*.log
+*.csv
+plan*.json
+resultado*.json
+
+# Configuración local (las versiones de ejemplo sí se versionan)
+config/config.json
+config/reglas.local.json
+
+# Copias locales del motor en la raíz (la versión canónica está en motor/)
+/Liberar-DiscoC.ps1
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editores y sistema
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+config/privacidad.local.txt
+*.lnk

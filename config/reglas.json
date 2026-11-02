@@ -1,0 +1,610 @@
+{
+  "version": 1,
+  "_comentario": "Reglas compartidas por el motor PowerShell (motor\\Motor-Almacenamiento.ps1) y el gestor visual. config\\reglas.local.json (no versionado) se fusiona encima: los objetos se combinan clave a clave y las listas o textos se reemplazan completos. Las categorías pueden ser una clave de 'taxonomia' o una ruta relativa literal.",
+  "taxonomia": {
+    "TFG": "Universidad_Academico\\TFG_Proyecto_Graduacion",
+    "Ingles": "Universidad_Academico\\Ingles_Idiomas",
+    "Cursos": "Universidad_Academico\\Cursos_Tareas_Materias",
+    "Libros": "Biblioteca_Digital_Libros\\Libros_y_Manuales",
+    "Certif": "Biblioteca_Digital_Libros\\Guias_Certificaciones_TI",
+    "Articulos": "Biblioteca_Digital_Libros\\Articulos_Academicos",
+    "Notas": "Notas_Texto_Borradores\\Notas_TXT",
+    "Markdown": "Notas_Texto_Borradores\\Markdown_y_Apuntes",
+    "Datos": "Notas_Texto_Borradores\\Datos_CSV_JSON_SQL",
+    "CV": "Documentos_Personales\\CV_Curriculum",
+    "Ident": "Documentos_Personales\\Identificacion_y_Finanzas",
+    "Tramites": "Documentos_Personales\\Tramites_y_Cartas",
+    "Videos": "Multimedia\\Videos_Descargados",
+    "Audio": "Multimedia\\Audio",
+    "Imagenes": "Multimedia\\Imagenes_y_Capturas",
+    "VidGrab": "Multimedia\\Videos_Grabaciones",
+    "CursosTI": "Cursos_y_Certificaciones",
+    "Instal": "Instaladores_Software",
+    "Scripts": "Proyectos_Codigo\\Scripts_Sueltos",
+    "Repos": "Proyectos_Codigo\\Desde_Descargas",
+    "Comprim": "Triage_Por_Clasificar\\Comprimidos_Sin_Revisar",
+    "Office": "Triage_Por_Clasificar\\Office_Sin_Clasificar",
+    "PDF": "Triage_Por_Clasificar\\PDF_Sin_Clasificar",
+    "Mensajes": "Triage_Por_Clasificar\\Carpetas_De_Mensajeria",
+    "Carpetas": "Triage_Por_Clasificar\\Carpetas_Sin_Origen_Claro"
+  },
+  "extensiones": {
+    "documento": [
+      ".pdf",
+      ".doc",
+      ".docx",
+      ".odt",
+      ".rtf",
+      ".ppt",
+      ".pptx",
+      ".pps",
+      ".ppsx",
+      ".odp",
+      ".xls",
+      ".xlsx",
+      ".xlsm",
+      ".ods"
+    ],
+    "libro": [
+      ".epub",
+      ".mobi",
+      ".azw",
+      ".azw3",
+      ".djvu",
+      ".fb2",
+      ".cbz",
+      ".cbr"
+    ],
+    "texto": [
+      ".txt",
+      ".log"
+    ],
+    "markdown": [
+      ".md",
+      ".markdown"
+    ],
+    "datos": [
+      ".csv",
+      ".json",
+      ".sql",
+      ".xml",
+      ".yaml",
+      ".yml"
+    ],
+    "video": [
+      ".mp4",
+      ".mkv",
+      ".mov",
+      ".avi",
+      ".webm",
+      ".wmv",
+      ".flv",
+      ".m4v"
+    ],
+    "audio": [
+      ".mp3",
+      ".wav",
+      ".ogg",
+      ".m4a",
+      ".flac",
+      ".aac",
+      ".opus"
+    ],
+    "imagen": [
+      ".png",
+      ".jpg",
+      ".jpeg",
+      ".gif",
+      ".webp",
+      ".bmp",
+      ".heic",
+      ".svg",
+      ".tif",
+      ".tiff"
+    ],
+    "instalador": [
+      ".exe",
+      ".msi",
+      ".msix",
+      ".msixbundle",
+      ".appx",
+      ".iso"
+    ],
+    "comprimido": [
+      ".zip",
+      ".rar",
+      ".7z",
+      ".tar",
+      ".gz"
+    ],
+    "codigo": [
+      ".py",
+      ".pas",
+      ".php",
+      ".js",
+      ".ts",
+      ".html",
+      ".htm",
+      ".css",
+      ".java",
+      ".c",
+      ".cpp",
+      ".cs",
+      ".ps1",
+      ".sh",
+      ".ipynb"
+    ],
+    "redes": [
+      ".pka",
+      ".pkt"
+    ],
+    "ignorar": [
+      ".lnk",
+      ".url",
+      ".appref-ms",
+      ".ini",
+      ".tmp",
+      ".crdownload",
+      ".part",
+      ".partial",
+      ".bat",
+      ".cmd"
+    ]
+  },
+  "patrones": {
+    "ident": "(?i)c[eé]dula|iban|residencia|pasaporte|tasas|estado de cuenta|banco|factura|recibo",
+    "cv": "(?i)(^|[^a-z])(cv|curr[ií]cul(um|o)|resume|hoja de vida)([^a-z]|$)",
+    "tramite": "(?i)carta|certificad|boleto|matr[ií]cula|tr[aá]mite|solicitud",
+    "tfg": "(?i)tfg|tesis|bit[aá]cora|avance|minuta|convenio|consentimiento|patrocinador|declaraci[oó]n|entrega|informe de (cierre|pruebas)|acuerdos",
+    "ingles": "(?i)grammar|oral exam|course calendar|student.?s book|\\bunit \\d|toefl|ingl[eé]s|english",
+    "certif": "(?i)az-\\d{3}|\\baws\\b|comptia|ccna|security\\+|official.course|study.guide|certification",
+    "libro": "(?i)libro|book|manual|handbook|edici[oó]n|edition|cap[ií]tulo|chapter",
+    "articulo": "(?i)art[ií]culo|paper|journal|revista",
+    "cursos": "(?i)universidad|tarea|proyecto|asignatura|examen|exam|quiz|enunciado|instruc|materia|cuatri|semestre|^\\d{4,5}\\s*[-_ ]|pr[aá]ctica|gu[ií]a|actividad|eval|laboratorio|apuntes|clase|lecci[oó]n|unidad|introduc|resumen|investigaci",
+    "carpeta_ingles": "(?i)ingl[eé]s|toefl|inmersi[oó]n|english",
+    "carpeta_libros": "(?i)\\blibros?\\b|biblioteca",
+    "carpeta_becas": "(?i)\\bbecas?\\b",
+    "carpeta_cursos": "(?i)universidad|cuatri|semestre|compiladores|bases de datos|telem[aá]tica|sistemas operativos|\\bredes\\b|^\\d{5} -|acad[eé]mic",
+    "carpeta_cursos_ti": "(?i)comptia|curso|cloud|devops|data ?scien|certificaci[oó]n|bootcamp",
+    "carpeta_mensajeria": "(?i)chatexport|whatsapp",
+    "carpeta_videos": "(?i)\\bvideos?\\b|\\bobs\\b|filmora",
+    "carpeta_proyectos": "(?i)projects?|proyectos?|python|c\\+\\+|pascal|html|programming",
+    "nombre_tecnico": "^[0-9a-f]{20,}$"
+  },
+  "archivos": {
+    "_comentario": "Primera regla que coincide gana. Una regla coincide si la extensión está en sus 'grupos' o 'extensiones' y, si tiene 'patron', el nombre sin extensión lo cumple.",
+    "ignorar_grupo": "ignorar",
+    "ignorar_nombres_como": [
+      "~*"
+    ],
+    "reglas": [
+      {
+        "grupos": [
+          "texto"
+        ],
+        "categoria": "Notas"
+      },
+      {
+        "grupos": [
+          "markdown"
+        ],
+        "categoria": "Markdown"
+      },
+      {
+        "grupos": [
+          "datos"
+        ],
+        "categoria": "Datos"
+      },
+      {
+        "grupos": [
+          "video"
+        ],
+        "categoria": "Videos"
+      },
+      {
+        "grupos": [
+          "audio"
+        ],
+        "categoria": "Audio"
+      },
+      {
+        "grupos": [
+          "imagen"
+        ],
+        "categoria": "Imagenes"
+      },
+      {
+        "grupos": [
+          "instalador"
+        ],
+        "categoria": "Instal"
+      },
+      {
+        "grupos": [
+          "codigo"
+        ],
+        "categoria": "Scripts"
+      },
+      {
+        "grupos": [
+          "redes"
+        ],
+        "categoria": "Cursos"
+      },
+      {
+        "grupos": [
+          "libro"
+        ],
+        "categoria": "Libros"
+      },
+      {
+        "grupos": [
+          "documento",
+          "comprimido"
+        ],
+        "patron": "ident",
+        "categoria": "Ident"
+      },
+      {
+        "grupos": [
+          "documento",
+          "comprimido"
+        ],
+        "patron": "cv",
+        "categoria": "CV"
+      },
+      {
+        "grupos": [
+          "documento",
+          "comprimido"
+        ],
+        "patron": "tramite",
+        "categoria": "Tramites"
+      },
+      {
+        "grupos": [
+          "documento",
+          "comprimido"
+        ],
+        "patron": "tfg",
+        "categoria": "TFG"
+      },
+      {
+        "grupos": [
+          "documento",
+          "comprimido"
+        ],
+        "patron": "ingles",
+        "categoria": "Ingles"
+      },
+      {
+        "extensiones": [
+          ".pdf"
+        ],
+        "patron": "certif",
+        "categoria": "Certif"
+      },
+      {
+        "extensiones": [
+          ".pdf"
+        ],
+        "patron": "articulo",
+        "categoria": "Articulos"
+      },
+      {
+        "extensiones": [
+          ".pdf"
+        ],
+        "patron": "libro",
+        "categoria": "Libros"
+      },
+      {
+        "grupos": [
+          "documento",
+          "comprimido"
+        ],
+        "patron": "cursos",
+        "categoria": "Cursos"
+      },
+      {
+        "grupos": [
+          "comprimido"
+        ],
+        "categoria": "Comprim"
+      },
+      {
+        "extensiones": [
+          ".pdf"
+        ],
+        "categoria": "PDF"
+      },
+      {
+        "grupos": [
+          "documento"
+        ],
+        "categoria": "Office"
+      }
+    ],
+    "respaldo": "Triage_Por_Clasificar\\Extension_{EXT}",
+    "respaldo_sin_extension": "SinExtension"
+  },
+  "carpetas_usuario": {
+    "_comentario": "Subcarpetas de Descargas (y del Escritorio en el gestor). 'excluir' se quedan en su sitio porque algo depende de su ruta.",
+    "excluir": [
+      ".vs"
+    ],
+    "marcadores_codigo": [
+      ".git",
+      "package.json",
+      "*.sln",
+      "*.csproj",
+      "requirements.txt",
+      "pyproject.toml",
+      "pom.xml",
+      "composer.json"
+    ],
+    "mensajeria": [
+      "Telegram Desktop",
+      "WhatsApp_files"
+    ],
+    "categoria_codigo": "Repos",
+    "categoria_mensajeria": "Mensajes",
+    "categoria_defecto": "Carpetas"
+  },
+  "raiz_destino": {
+    "_comentario": "Reorganización de la raíz del disco destino. La taxonomía propia nunca se reclasifica.",
+    "propias_extra": [
+      "Registro_Migracion_DiscoC",
+      "Cache_Aplicaciones_Enlazadas"
+    ],
+    "protegidas_por_nombre": [
+      "WindowsApps",
+      "WpSystem",
+      "XboxGames",
+      "Program Files*",
+      "SteamLibrary",
+      "Riot Games",
+      "Battle.net",
+      "WUDownloadCache",
+      "MySQL",
+      "SQL20*",
+      "Microsoft SQL Server*",
+      "GodMode.*",
+      "scoped_dir*",
+      "Documents"
+    ],
+    "archivos_conservar": [],
+    "patron_nombre_tecnico": "nombre_tecnico",
+    "reglas_carpetas": [
+      {
+        "patron": "carpeta_ingles",
+        "categoria": "Ingles"
+      },
+      {
+        "patron": "carpeta_libros",
+        "categoria": "Libros"
+      },
+      {
+        "patron": "carpeta_becas",
+        "categoria": "Tramites"
+      },
+      {
+        "patron": "carpeta_cursos",
+        "categoria": "Cursos"
+      },
+      {
+        "patron": "carpeta_cursos_ti",
+        "categoria": "CursosTI"
+      },
+      {
+        "patron": "carpeta_mensajeria",
+        "categoria": "Mensajes"
+      },
+      {
+        "patron": "carpeta_videos",
+        "categoria": "VidGrab"
+      },
+      {
+        "patron": "carpeta_proyectos",
+        "categoria": "Proyectos_Codigo"
+      }
+    ],
+    "categoria_defecto": "Carpetas"
+  },
+  "caches": {
+    "_comentario": "Cachés regenerables que se mueven al destino dejando una junction. Quedan fuera a propósito las carpetas de datos de apps marcadas como intocables, las apps MSIX y uv (usa enlaces duros).",
+    "carpeta_destino": "Cache_Aplicaciones_Enlazadas",
+    "lista": [
+      {
+        "nombre": "NetBeans_Cache",
+        "ruta": "%LOCALAPPDATA%\\NetBeans\\Cache",
+        "procesos": [
+          "netbeans64",
+          "netbeans"
+        ]
+      },
+      {
+        "nombre": "NVIDIA_DXCache",
+        "ruta": "%LOCALAPPDATA%\\NVIDIA\\DXCache",
+        "procesos": []
+      },
+      {
+        "nombre": "npm_cache",
+        "ruta": "%LOCALAPPDATA%\\npm-cache",
+        "procesos": []
+      },
+      {
+        "nombre": "pip_cache",
+        "ruta": "%LOCALAPPDATA%\\pip\\cache",
+        "procesos": []
+      }
+    ]
+  },
+  "enlaces_app": {
+    "_comentario": "Carpetas pesadas de apps de escritorio que el motor puede reubicar con junction (-EnlazarVMApp), con la app cerrada. Cada entrada: nombre, base (admite %VARIABLES%), subcarpeta (comodín, opcional), carpeta, procesos, destino y habilitada. Vacía por defecto: añade las tuyas en reglas.local.json.",
+    "lista": []
+  },
+  "intocables": {
+    "_comentario": "Nunca se mueven. 'rutas' admite variables de entorno y comodines por segmento; las que no se puedan expandir se ignoran. 'nombres' se compara con cada segmento de la ruta. 'rutas_extra' se suma a 'rutas' (úsala en reglas.local.json para proteger carpetas de apps propias sin copiar la lista).",
+    "rutas": [
+      "%SystemRoot%",
+      "%ProgramFiles%",
+      "%ProgramFiles(x86)%",
+      "%ProgramW6432%",
+      "%ProgramData%",
+      "%SystemDrive%\\pagefile.sys",
+      "%SystemDrive%\\hiberfil.sys",
+      "%SystemDrive%\\swapfile.sys",
+      "%SystemDrive%\\DumpStack.log*",
+      "%SystemDrive%\\$Recycle.Bin",
+      "%SystemDrive%\\System Volume Information",
+      "%SystemDrive%\\Recovery",
+      "%SystemDrive%\\$WinREAgent",
+      "%SystemDrive%\\Config.Msi",
+      "%SystemDrive%\\Windows.old",
+      "%SystemDrive%\\PerfLogs",
+      "%OneDrive%",
+      "%OneDriveConsumer%",
+      "%OneDriveCommercial%",
+      "%USERPROFILE%\\OneDrive*",
+      "%USERPROFILE%\\NTUSER.DAT*",
+      "%LOCALAPPDATA%\\Microsoft\\Windows",
+      "%LOCALAPPDATA%\\Packages\\Microsoft.*"
+    ],
+    "nombres": [
+      "Steam",
+      "SteamLibrary",
+      "steamapps",
+      "XboxGames",
+      "WindowsApps",
+      "WpSystem",
+      "ModifiableWindowsApps",
+      "Riot Games",
+      "Riot Client",
+      "Battle.net",
+      "Blizzard*",
+      "Epic Games",
+      "EA Games",
+      "GOG Galaxy",
+      "Ubisoft Game Launcher",
+      "MySQL",
+      "MariaDB*",
+      "Microsoft SQL Server*",
+      "MSSQL*",
+      "SQL20*",
+      "SQL Server*",
+      "PostgreSQL",
+      ".git"
+    ],
+    "proyectos_usuario": [],
+    "extensiones": [
+      ".mdf",
+      ".ldf",
+      ".ndf",
+      ".sqlite",
+      ".sqlite3",
+      ".db",
+      ".db3",
+      ".db-wal",
+      ".db-shm",
+      ".db-journal",
+      ".ibd",
+      ".frm",
+      ".myd",
+      ".myi",
+      ".accdb",
+      ".mdb",
+      ".pst",
+      ".ost",
+      ".vhd",
+      ".vhdx"
+    ],
+    "nombres_no_bd": [
+      "Thumbs.db",
+      "ehthumbs.db",
+      "ehthumbs_vista.db"
+    ],
+    "marcadores_repo": [
+      ".git"
+    ],
+    "rutas_extra": []
+  },
+  "analisis": {
+    "_comentario": "Solo para el gestor visual: qué carpetas medir y qué categorías se tratan como 'Revisar' aunque tengan destino.",
+    "categorias_revisar": [
+      "Triage_Por_Clasificar",
+      "Proyectos_Codigo\\Desde_Descargas"
+    ],
+    "carpetas_conocidas": [
+      {
+        "ruta": "%LOCALAPPDATA%\\Temp",
+        "nota": "Temporales. No se mueven: límpialos con Configuración > Sistema > Almacenamiento > Archivos temporales."
+      },
+      {
+        "ruta": "%LOCALAPPDATA%\\Packages",
+        "nota": "Datos de apps de la Tienda (MSIX). No admiten junctions de forma fiable."
+      },
+      {
+        "ruta": "%LOCALAPPDATA%\\Google\\Chrome\\User Data",
+        "nota": "Perfil de Chrome. Usa la limpieza del navegador."
+      },
+      {
+        "ruta": "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data",
+        "nota": "Perfil de Edge. Usa la limpieza del navegador."
+      },
+      {
+        "ruta": "%APPDATA%\\Mozilla\\Firefox\\Profiles",
+        "nota": "Perfil de Firefox."
+      },
+      {
+        "ruta": "%LOCALAPPDATA%\\npm-cache",
+        "nota": "Caché de npm (reubicable con junction)."
+      },
+      {
+        "ruta": "%LOCALAPPDATA%\\pip\\cache",
+        "nota": "Caché de pip (reubicable con junction)."
+      },
+      {
+        "ruta": "%LOCALAPPDATA%\\uv",
+        "nota": "Caché de uv: usa enlaces duros, no se reubica."
+      },
+      {
+        "ruta": "%LOCALAPPDATA%\\NVIDIA\\DXCache",
+        "nota": "Caché de sombreadores de NVIDIA (reubicable con junction)."
+      },
+      {
+        "ruta": "%LOCALAPPDATA%\\NetBeans\\Cache",
+        "nota": "Caché de NetBeans (reubicable con junction)."
+      },
+      {
+        "ruta": "%LOCALAPPDATA%\\Docker",
+        "nota": "Docker / WSL. No se mueve desde aquí."
+      },
+      {
+        "ruta": "%LOCALAPPDATA%\\Programs",
+        "nota": "Programas instalados por usuario. Intocable en la práctica."
+      },
+      {
+        "ruta": "%APPDATA%\\Code",
+        "nota": "VS Code: configuración y cachés."
+      },
+      {
+        "ruta": "%USERPROFILE%\\.cache",
+        "nota": "Cachés de herramientas de desarrollo."
+      },
+      {
+        "ruta": "%USERPROFILE%\\.nuget",
+        "nota": "Paquetes NuGet."
+      },
+      {
+        "ruta": "%USERPROFILE%\\.gradle",
+        "nota": "Caché de Gradle."
+      },
+      {
+        "ruta": "%USERPROFILE%\\.m2",
+        "nota": "Repositorio local de Maven."
+      }
+    ]
+  }
+}

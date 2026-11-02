@@ -1,0 +1,11 @@
+# Términos privados para scripts\auditar-privacidad.ps1. Copia este archivo como privacidad.local.txt (no versionado).
+# Un término por línea (sin distinguir mayúsculas). Si la línea empieza por "re:", es una expresión regular
+# que distingue mayúsculas (útil para siglas o palabras cortas).
+<tu-nombre>
+<tu-apellido>
+<tus-iniciales>
+<tu-usuario-o-correo>
+<carpeta-real>
+<proyecto-propio>
+<herramienta-a-ocultar>
+re:\b<SIGLA>\b
